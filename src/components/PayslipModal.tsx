@@ -208,6 +208,31 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
                     </tr>
                   )}
 
+                  {/* Maternity Pay */}
+                  {payroll.maternityDays > 0 && (
+                    <tr className="bg-purple-50/40">
+                      <td className="py-2.5 px-3">
+                        <span className="font-semibold text-purple-900">Декретный отпуск / Пособие (БиР и уход)</span>
+                        <span className="block text-[10px] text-purple-700">
+                          Отпуск по беременности и родам / по уходу за ребёнком
+                          {employee.maternityMonthlyAllowance ? ` + пособие ${formatCurrency(employee.maternityMonthlyAllowance)}` : ''}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-center font-bold text-purple-800">
+                        {payroll.maternityDays} дн.
+                      </td>
+                      <td className="py-2.5 px-3 text-center text-slate-600">
+                        {formatCurrency(payroll.dailyRate)}
+                      </td>
+                      <td className="py-2.5 px-3 text-center text-slate-500 font-mono text-[11px]">
+                        {payroll.maternityDays} × {payroll.dailyRate} ₽ × {employee.maternityPayPercentage ?? 100}%
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-bold text-purple-800">
+                        {formatCurrency(payroll.maternityPay)}
+                      </td>
+                    </tr>
+                  )}
+
                   {/* Monthly Bonus */}
                   {payroll.monthlyBonus > 0 && (
                     <tr>
@@ -224,6 +249,28 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
                       </td>
                       <td className="py-2.5 px-3 text-right font-bold text-amber-800">
                         {formatCurrency(payroll.monthlyBonus)}
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Jubilee Bonus */}
+                  {payroll.jubileeBonus > 0 && (
+                    <tr className="bg-amber-50/60">
+                      <td className="py-2.5 px-3">
+                        <span className="font-bold text-amber-900 flex items-center gap-1">
+                          <span>🎂 Единовременная выплата к Юбилею</span>
+                        </span>
+                        <span className="block text-[10px] text-amber-800">
+                          В честь празднования {payroll.jubileeAge || payroll.age} лет со дня рождения
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-center text-amber-900 font-bold">Юбилей</td>
+                      <td className="py-2.5 px-3 text-center text-slate-400">-</td>
+                      <td className="py-2.5 px-3 text-center text-amber-900 font-mono text-[11px]">
+                        Круглая дата {payroll.jubileeAge} лет
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-extrabold text-amber-900">
+                        {formatCurrency(payroll.jubileeBonus)}
                       </td>
                     </tr>
                   )}

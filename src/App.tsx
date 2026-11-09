@@ -7,6 +7,7 @@ import {
   formatCurrency,
   formatDate,
   RUSSIAN_MONTHS,
+  getJubileesInMonth,
 } from './utils/scheduleCalculator.ts';
 import { Header } from './components/Header.tsx';
 import { ScheduleMatrix } from './components/ScheduleMatrix.tsx';
@@ -16,6 +17,7 @@ import { ShiftEditModal } from './components/ShiftEditModal.tsx';
 import { EmployeeModal } from './components/EmployeeModal.tsx';
 import { BatchPeriodModal } from './components/BatchPeriodModal.tsx';
 import { BulkScheduleModal } from './components/BulkScheduleModal.tsx';
+import { JubileeCelebrationModal } from './components/JubileeCelebrationModal.tsx';
 
 const STORAGE_KEYS = {
   EMPLOYEES: 'shift_app_employees_v1',
@@ -92,12 +94,18 @@ export default function App() {
 
   const [isBatchPeriodOpen, setIsBatchPeriodOpen] = useState(false);
   const [isBulkScheduleOpen, setIsBulkScheduleOpen] = useState(false);
+  const [isJubileeModalOpen, setIsJubileeModalOpen] = useState(false);
 
   // Departments list
   const departments = useMemo(() => {
     const set = new Set(employees.map((e) => e.department));
     return Array.from(set).filter(Boolean);
   }, [employees]);
+
+  // Jubilarians celebrating milestone birthdays (>= 50) this month
+  const jubilees = useMemo(() => {
+    return getJubileesInMonth(employees, year, month);
+  }, [employees, year, month]);
 
   // Monthly shifts map per employee
   const employeeShiftsMap = useMemo(() => {
@@ -208,6 +216,12 @@ export default function App() {
     );
   };
 
+  const handleUpdateJubileeBonus = (employeeId: string, bonus: number) => {
+    setEmployees((prev) =>
+      prev.map((e) => (e.id === employeeId ? { ...e, jubileeBonus: Math.max(0, bonus) } : e))
+    );
+  };
+
   // Bulk schedule change
   const handleApplyBulkSchedule = (
     employeeIds: string[],
@@ -248,6 +262,8 @@ export default function App() {
       'Должность',
       'Отдел',
       'График',
+      'Дата рождения',
+      'Возраст',
       'Ставка за 1 день (руб)',
       'План смен',
       'Отработано смен',
@@ -258,7 +274,10 @@ export default function App() {
       'Оплата больничных (руб)',
       'Отпускные дни',
       'Оплата отпуска (руб)',
+      'Декретные дни',
+      'Оплата декрета и пособия (руб)',
       'Премия (руб)',
+      'Юбилейная выплата (руб)',
       'ИТОГО К ВЫПЛАТЕ (руб)',
     ];
 
@@ -270,6 +289,8 @@ export default function App() {
         `"${emp.position}"`,
         `"${emp.department}"`,
         `"${emp.scheduleType}"`,
+        `"${emp.birthDate || ''}"`,
+        calc.age ?? '',
         calc.dailyRate,
         calc.plannedWorkDays,
         calc.actualWorkedDays,
@@ -280,7 +301,10 @@ export default function App() {
         calc.sickPay,
         calc.vacationDays,
         calc.vacationPay,
+        calc.maternityDays,
+        calc.maternityPay,
         calc.monthlyBonus,
+        calc.jubileeBonus,
         calc.totalPayout,
       ];
     });
@@ -312,9 +336,11 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         payrollList={payrollList}
+        jubilees={jubilees}
         onOpenAddEmployee={() => setEmployeeModalTarget({ employee: null })}
         onOpenBatchPeriod={() => setIsBatchPeriodOpen(true)}
         onOpenBulkSchedule={() => setIsBulkScheduleOpen(true)}
+        onOpenJubileeModal={() => setIsJubileeModalOpen(true)}
         onExportCsv={handleExportCsv}
         onResetData={handleResetData}
         selectedDepartment={selectedDepartment}
@@ -433,6 +459,17 @@ export default function App() {
           departments={departments}
           onApplyBulkSchedule={handleApplyBulkSchedule}
           onClose={() => setIsBulkScheduleOpen(false)}
+        />
+      )}
+
+      {isJubileeModalOpen && (
+        <JubileeCelebrationModal
+          jubilees={jubilees}
+          allEmployees={employees}
+          year={year}
+          month={month}
+          onUpdateJubileeBonus={handleUpdateJubileeBonus}
+          onClose={() => setIsJubileeModalOpen(false)}
         />
       )}
     </div>

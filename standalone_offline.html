@@ -13,6 +13,7 @@
     .status-unplanned-off { background-color: #fef3c7; color: #b45309; }
     .status-sick { background-color: #fee2e2; color: #b91c1c; font-weight: bold; }
     .status-vacation { background-color: #ccfbf1; color: #0f766e; font-weight: bold; }
+    .status-maternity { background-color: #f3e8ff; color: #6b21a8; font-weight: bold; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen">
@@ -25,7 +26,7 @@
             <h1 class="text-xl font-bold text-slate-900">График Смен и Расчёт Зарплаты</h1>
             <span class="px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-md">Автономно • БЕЗ Node.js</span>
           </div>
-          <p class="text-xs text-slate-500 mt-1">Графики (2/2, 5/2, 1/3, 3/3), внеплановые смены, отпуска, больничные и авторасчёт зарплаты</p>
+          <p class="text-xs text-slate-500 mt-1">Графики (2/2, 5/2, 1/3, 3/3), больничные, отпуска, декретные и поздравления юбиляров (50+ лет)</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -36,12 +37,16 @@
           </div>
 
           <select id="cmbDept" class="bg-white border border-slate-200 text-xs rounded-xl px-3 py-2">
-            <option value="ALL">Все отделы (4)</option>
+            <option value="ALL">Все отделы</option>
             <option value="Производство">Производство</option>
             <option value="Служба эксплуатации">Служба эксплуатации</option>
             <option value="Финансовый отдел">Финансовый отдел</option>
             <option value="Логистика">Логистика</option>
           </select>
+
+          <button id="btnJubilees" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-xs font-bold px-3 py-2 rounded-xl transition">
+            🎂 Юбиляры месяца (50+)
+          </button>
 
           <button id="btnExportCsv" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl transition">
             Экспорт в Excel (CSV)
@@ -49,14 +54,23 @@
         </div>
       </div>
 
+      <!-- Jubilee Notification Banner -->
+      <div id="jubileeBanner" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-xs text-amber-900 hidden">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🎂</span>
+          <span>В этом месяце отмечают <strong>юбилей от 50 лет</strong> наши сотрудники! Нажмите для просмотра поздравительного адреса и назначения премии.</span>
+        </div>
+        <button onclick="showJubileesDialog()" class="px-3 py-1 bg-amber-600 text-white rounded-lg font-bold hover:bg-amber-700">Поздравить юбиляров</button>
+      </div>
+
       <!-- KPI -->
-      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4 pt-4 border-t border-slate-100 text-xs">
+      <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 mt-4 pt-4 border-t border-slate-100 text-xs">
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
           <span class="text-slate-500">Сотрудников:</span>
-          <div id="kpiEmployees" class="text-base font-bold text-slate-900 mt-0.5">6 чел.</div>
+          <div id="kpiEmployees" class="text-base font-bold text-slate-900 mt-0.5">7 чел.</div>
         </div>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-          <span class="text-slate-500">Отработано смен:</span>
+          <span class="text-slate-500">Смены факт/план:</span>
           <div id="kpiShifts" class="text-base font-bold text-slate-900 mt-0.5">88 / 95</div>
         </div>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -67,9 +81,13 @@
           <span class="text-slate-500">Отпуска:</span>
           <div id="kpiVacation" class="text-base font-bold text-teal-700 mt-0.5">7 дн.</div>
         </div>
+        <div class="bg-purple-50 p-3 rounded-xl border border-purple-200">
+          <span class="text-purple-700">Декретные (БиР):</span>
+          <div id="kpiMaternity" class="text-base font-bold text-purple-800 mt-0.5">30 дн.</div>
+        </div>
         <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 col-span-2 sm:col-span-1">
-          <span class="text-emerald-800">Фонд зарплаты (ФОТ):</span>
-          <div id="kpiPayroll" class="text-base font-extrabold text-emerald-800 mt-0.5">427 140 ₽</div>
+          <span class="text-emerald-800">Фонд з/п (ФОТ):</span>
+          <div id="kpiPayroll" class="text-base font-extrabold text-emerald-800 mt-0.5">0 ₽</div>
         </div>
       </div>
     </header>
@@ -82,9 +100,9 @@
 
     <!-- Matrix View -->
     <div id="viewMatrix" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
-        <span>💡 Кликните по любой ячейке со сменой, чтобы изменить статус (смена, выходной, отпуск, больничный).</span>
-        <span class="font-medium">Обозначения: Р - работа, В - выходной, ВР - внеплановая, Б - больничный, ОТ - отпуск</span>
+      <div class="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
+        <span>💡 Кликните по любой ячейке со сменой, чтобы изменить статус (смена, выходной, отпуск, больничный, декрет).</span>
+        <span class="font-medium text-slate-700">Р - смена, В - выходной, ВР - внеплановая, Б - больничный, ОТ - отпуск, <span class="text-purple-700 font-bold">Д - декрет</span></span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs border-collapse" id="matrixTable">
@@ -96,7 +114,7 @@
     <!-- Payroll View -->
     <div id="viewPayroll" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hidden">
       <div class="p-3 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-800">
-        Ведомость начислений: расчёт по количеству смен, дневной ставке, больничным (80%) и отпускным (100%)
+        Ведомость начислений: оклад, больничные (80%), отпускные (100%), декретные (100% + пособие) и юбилейные премии (50+ лет)
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs divide-y divide-slate-200" id="payrollTable">
@@ -113,12 +131,13 @@
     let currentDept = "ALL";
 
     let employees = [
-      { id: "emp-1", name: "Иванов Алексей Петрович", pos: "Старший сменный мастер", dept: "Производство", rate: 4500, sched: "2/2", hours: 12, anchor: "2026-11-01", bonus: 5000 },
-      { id: "emp-2", name: "Смирнова Екатерина Михайловна", pos: "Оператор производственной линии", dept: "Производство", rate: 3600, sched: "2/2", hours: 12, anchor: "2026-11-03", bonus: 0 },
-      { id: "emp-3", name: "Кузнецов Дмитрий Сергеевич", pos: "Дежурный инженер КИПиА", dept: "Служба эксплуатации", rate: 5200, sched: "1/3", hours: 24, anchor: "2026-11-01", bonus: 0 },
-      { id: "emp-4", name: "Морозова Анна Владимировна", pos: "Бухгалтер-экономист", dept: "Финансовый отдел", rate: 4200, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 0 },
-      { id: "emp-5", name: "Васильев Роман Андреевич", pos: "Кладовщик-комплектовщик", dept: "Логистика", rate: 3400, sched: "3/3", hours: 10, anchor: "2026-11-01", bonus: 0 },
-      { id: "emp-6", name: "Попова Ольга Николаевна", pos: "Менеджер по отгрузкам", dept: "Логистика", rate: 3800, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 7000 }
+      { id: "emp-1", name: "Иванов Алексей Петрович", birthDate: "1976-11-15", pos: "Старший сменный мастер", dept: "Производство", rate: 4500, sched: "2/2", hours: 12, anchor: "2026-11-01", bonus: 5000, jubileeBonus: 15000 },
+      { id: "emp-2", name: "Смирнова Екатерина Михайловна", birthDate: "1992-04-18", pos: "Оператор производственной линии", dept: "Производство", rate: 3600, sched: "2/2", hours: 12, anchor: "2026-11-03", bonus: 0, jubileeBonus: 0 },
+      { id: "emp-3", name: "Кузнецов Дмитрий Сергеевич", birthDate: "1988-08-22", pos: "Дежурный инженер КИПиА", dept: "Служба эксплуатации", rate: 5200, sched: "1/3", hours: 24, anchor: "2026-11-01", bonus: 0, jubileeBonus: 0 },
+      { id: "emp-4", name: "Морозова Анна Владимировна", birthDate: "1995-03-12", pos: "Бухгалтер-экономист", dept: "Финансовый отдел", rate: 4200, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 0, jubileeBonus: 0 },
+      { id: "emp-5", name: "Васильев Роман Андреевич", birthDate: "1966-11-28", pos: "Кладовщик-комплектовщик", dept: "Логистика", rate: 3400, sched: "3/3", hours: 10, anchor: "2026-11-01", bonus: 0, jubileeBonus: 20000 },
+      { id: "emp-6", name: "Попова Ольга Николаевна", birthDate: "1985-09-05", pos: "Менеджер по отгрузкам", dept: "Логистика", rate: 3800, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 7000, jubileeBonus: 0 },
+      { id: "emp-7", name: "Соколова Марина Александровна", birthDate: "1993-06-10", pos: "Специалист по кадрам", dept: "Финансовый отдел", rate: 3900, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 0, jubileeBonus: 0, maternityAllowance: 15000 }
     ];
 
     let overrides = {
@@ -137,6 +156,11 @@
       "emp-5_2026-11-22": { status: "VACATION", hours: 0 }
     };
 
+    // Декретный отпуск Соколовой М.А. на ноябрь
+    for (let d = 1; d <= 30; d++) {
+      overrides[`emp-7_2026-11-${String(d).padStart(2,'0')}`] = { status: "MATERNITY", hours: 0 };
+    }
+
     function getDaysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
 
     function getBaseStatus(emp, dateStr) {
@@ -151,16 +175,42 @@
       return "WORK";
     }
 
+    function getJubileeForMonth(emp, y, m) {
+      if (!emp.birthDate) return null;
+      const bDate = new Date(emp.birthDate);
+      if (bDate.getMonth() + 1 !== m) return null;
+      const age = y - bDate.getFullYear();
+      if (age >= 50 && age % 5 === 0) {
+        return { age, day: bDate.getDate() };
+      }
+      return null;
+    }
+
     function render() {
       document.getElementById("lblMonth").innerText = MONTH_NAMES[month - 1] + " " + year;
       const daysCount = getDaysInMonth(year, month);
       const filtered = employees.filter(e => currentDept === "ALL" || e.dept === currentDept);
 
+      // Jubilees
+      const jubilees = [];
+      filtered.forEach(e => {
+        const jub = getJubileeForMonth(e, year, month);
+        if (jub) jubilees.push({ emp: e, age: jub.age, day: jub.day });
+      });
+
+      const banner = document.getElementById("jubileeBanner");
+      if (jubilees.length > 0) {
+        banner.classList.remove("hidden");
+      } else {
+        banner.classList.add("hidden");
+      }
+      document.getElementById("btnJubilees").innerText = `🎂 Юбиляры месяца (${jubilees.length})`;
+
       // KPI totals
-      let totalPlan = 0, totalActual = 0, totalSick = 0, totalVac = 0, totalFund = 0;
+      let totalPlan = 0, totalActual = 0, totalSick = 0, totalVac = 0, totalMat = 0, totalFund = 0;
 
       // Render Matrix
-      let ths = '<tr class="bg-slate-50 border-b border-slate-200 text-slate-600"><th class="p-2 min-w-[200px]">Сотрудник / График</th>';
+      let ths = '<tr class="bg-slate-50 border-b border-slate-200 text-slate-600"><th class="p-2 min-w-[220px]">Сотрудник / График</th>';
       for (let d = 1; d <= daysCount; d++) {
         const dt = new Date(year, month - 1, d);
         const isWk = dt.getDay() === 0 || dt.getDay() === 6;
@@ -170,8 +220,11 @@
 
       let rows = "";
       filtered.forEach(emp => {
-        let empPlanned = 0, empActual = 0, empSick = 0, empVac = 0;
-        let rowCells = `<td class="p-2 font-medium border-r border-slate-200"><div>${emp.name}</div><div class="text-[11px] text-slate-500">${emp.sched} • ${emp.rate.toLocaleString('ru')} ₽/дн</div></td>`;
+        let empPlanned = 0, empActual = 0, empSick = 0, empVac = 0, empMat = 0;
+        const jub = getJubileeForMonth(emp, year, month);
+        const nameBadge = jub ? `🎂 <span class="text-amber-800 font-bold">${emp.name} (${jub.age}л)</span>` : emp.name;
+
+        let rowCells = `<td class="p-2 font-medium border-r border-slate-200"><div>${nameBadge}</div><div class="text-[11px] text-slate-500">${emp.sched} • ${emp.rate.toLocaleString('ru')} ₽/дн</div></td>`;
 
         for (let d = 1; d <= daysCount; d++) {
           const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -184,6 +237,7 @@
           if (eff === "WORK" || eff === "UNPLANNED_WORK") empActual++;
           if (eff === "SICK") empSick++;
           if (eff === "VACATION") empVac++;
+          if (eff === "MATERNITY") empMat++;
 
           let badge = "Р", cls = "status-work";
           if (eff === "OFF") { badge = "В"; cls = "status-off"; }
@@ -191,6 +245,7 @@
           else if (eff === "UNPLANNED_OFF") { badge = "ВВ"; cls = "status-unplanned-off"; }
           else if (eff === "SICK") { badge = "Б"; cls = "status-sick"; }
           else if (eff === "VACATION") { badge = "ОТ"; cls = "status-vacation"; }
+          else if (eff === "MATERNITY") { badge = "Д"; cls = "status-maternity"; }
 
           rowCells += `<td onclick="editCell('${emp.id}', '${dateStr}', '${eff}')" class="p-1 text-center border-r border-slate-200 cursor-pointer hover:ring-2 hover:ring-blue-400 ${cls}">${badge}</td>`;
         }
@@ -198,12 +253,15 @@
         const basePay = empActual * emp.rate;
         const sickPay = empSick * emp.rate * 0.8;
         const vacPay = empVac * emp.rate * 1.0;
-        const total = basePay + sickPay + vacPay + emp.bonus;
+        const matPay = (empMat * emp.rate * 1.0) + (emp.maternityAllowance || 0);
+        const jubPay = emp.jubileeBonus || 0;
+        const total = basePay + sickPay + vacPay + matPay + emp.bonus + jubPay;
 
         totalPlan += empPlanned;
         totalActual += empActual;
         totalSick += empSick;
         totalVac += empVac;
+        totalMat += empMat;
         totalFund += total;
 
         rowCells += `<td class="p-2 text-center border-r border-slate-200 font-bold">${empActual}/${empPlanned}</td>`;
@@ -218,24 +276,27 @@
       document.getElementById("kpiShifts").innerText = totalActual + " / " + totalPlan;
       document.getElementById("kpiSick").innerText = totalSick + " дн.";
       document.getElementById("kpiVacation").innerText = totalVac + " дн.";
+      document.getElementById("kpiMaternity").innerText = totalMat + " дн.";
       document.getElementById("kpiPayroll").innerText = totalFund.toLocaleString('ru') + " ₽";
 
       // Render Payroll Table
       let payThead = `<thead class="bg-slate-50 border-b border-slate-200 text-slate-600"><tr>
         <th class="p-2.5">ФИО сотрудника</th>
-        <th class="p-2.5">Отдел / Должность</th>
+        <th class="p-2.5">Отдел</th>
         <th class="p-2.5">Ставка</th>
         <th class="p-2.5">Смены</th>
         <th class="p-2.5">Оклад</th>
         <th class="p-2.5">Больничные</th>
         <th class="p-2.5">Отпускные</th>
+        <th class="p-2.5">Декретные</th>
         <th class="p-2.5">Премия</th>
+        <th class="p-2.5">Юбилей (50+)</th>
         <th class="p-2.5 text-right font-bold text-slate-900">ИТОГО</th>
       </tr></thead>`;
 
       let payRows = "";
       filtered.forEach(emp => {
-        let empPlanned = 0, empActual = 0, empSick = 0, empVac = 0;
+        let empPlanned = 0, empActual = 0, empSick = 0, empVac = 0, empMat = 0;
         for (let d = 1; d <= daysCount; d++) {
           const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
           const base = getBaseStatus(emp, dateStr);
@@ -245,22 +306,29 @@
           if (eff === "WORK" || eff === "UNPLANNED_WORK") empActual++;
           if (eff === "SICK") empSick++;
           if (eff === "VACATION") empVac++;
+          if (eff === "MATERNITY") empMat++;
         }
 
         const basePay = empActual * emp.rate;
         const sickPay = empSick * emp.rate * 0.8;
         const vacPay = empVac * emp.rate * 1.0;
-        const total = basePay + sickPay + vacPay + emp.bonus;
+        const matPay = (empMat * emp.rate * 1.0) + (emp.maternityAllowance || 0);
+        const jubPay = emp.jubileeBonus || 0;
+        const total = basePay + sickPay + vacPay + matPay + emp.bonus + jubPay;
+
+        const jub = getJubileeForMonth(emp, year, month);
 
         payRows += `<tr class="border-b border-slate-100 hover:bg-slate-50">
           <td class="p-2.5 font-bold">${emp.name}</td>
-          <td class="p-2.5 text-slate-500">${emp.dept} (${emp.pos})</td>
+          <td class="p-2.5 text-slate-500">${emp.dept}</td>
           <td class="p-2.5 cursor-pointer text-blue-600 underline font-semibold" onclick="editRate('${emp.id}')">${emp.rate.toLocaleString('ru')} ₽/дн</td>
           <td class="p-2.5">${empActual} / ${empPlanned}</td>
           <td class="p-2.5">${basePay.toLocaleString('ru')} ₽</td>
           <td class="p-2.5 text-rose-700">${sickPay.toLocaleString('ru')} ₽</td>
           <td class="p-2.5 text-teal-700">${vacPay.toLocaleString('ru')} ₽</td>
+          <td class="p-2.5 font-bold text-purple-700">${matPay > 0 ? matPay.toLocaleString('ru') + ' ₽' : '—'}</td>
           <td class="p-2.5">${emp.bonus.toLocaleString('ru')} ₽</td>
+          <td class="p-2.5 ${jub ? 'bg-amber-50 text-amber-800 font-bold' : ''}">${jubPay > 0 ? '🎂 ' + jubPay.toLocaleString('ru') + ' ₽' : (jub ? '🎂 Юбиляр' : '—')}</td>
           <td class="p-2.5 text-right font-extrabold text-emerald-800">${total.toLocaleString('ru')} ₽</td>
         </tr>`;
       });
@@ -268,9 +336,9 @@
     }
 
     function editCell(empId, dateStr, currentStatus) {
-      const choice = prompt(`Изменение смены на ${dateStr}\nВыберите статус:\n1 - Рабочая смена (Р)\n2 - Выходной (В)\n3 - Внеплановая смена (ВР)\n4 - Внеплановый выходной (ВВ)\n5 - Больничный (Б)\n6 - Отпуск (ОТ)`);
+      const choice = prompt(`Изменение смены на ${dateStr}\nВыберите статус:\n1 - Рабочая смена (Р)\n2 - Выходной (В)\n3 - Внеплановая смена (ВР)\n4 - Внеплановый выходной (ВВ)\n5 - Больничный (Б)\n6 - Отпуск (ОТ)\n7 - Декретный отпуск (Д)`);
       if (!choice) return;
-      const statusMap = { "1": "WORK", "2": "OFF", "3": "UNPLANNED_WORK", "4": "UNPLANNED_OFF", "5": "SICK", "6": "VACATION" };
+      const statusMap = { "1": "WORK", "2": "OFF", "3": "UNPLANNED_WORK", "4": "UNPLANNED_OFF", "5": "SICK", "6": "VACATION", "7": "MATERNITY" };
       if (statusMap[choice]) {
         overrides[`${empId}_${dateStr}`] = { status: statusMap[choice], hours: (choice === "1" || choice === "3") ? 12 : 0 };
         render();
@@ -287,10 +355,42 @@
       }
     }
 
+    function showJubileesDialog() {
+      const jubilees = [];
+      employees.forEach(e => {
+        const jub = getJubileeForMonth(e, year, month);
+        if (jub) jubilees.push({ emp: e, age: jub.age, day: jub.day });
+      });
+
+      if (jubilees.length === 0) {
+        alert(`В ${MONTH_NAMES[month-1]} ${year} года юбиляров (от 50 лет) нет.`);
+        return;
+      }
+
+      let msg = `🎂 ЮБИЛЯРЫ В ${MONTH_NAMES[month-1].toUpperCase()} ${year} ГОДА:\n\n`;
+      jubilees.forEach((j, idx) => {
+        msg += `${idx + 1}. ${j.emp.name} — ${j.age} ЛЕТ! (День рождения: ${j.day} ${MONTH_NAMES[month-1]})\n`;
+        msg += `   Отдел: ${j.emp.dept}, Должность: ${j.emp.pos}\n`;
+        msg += `   Юбилейная выплата: ${j.emp.jubileeBonus.toLocaleString('ru')} ₽\n\n`;
+        msg += `   Поздравление:\n   "Уважаемый(ая) ${j.emp.name}! От всего коллектива и руководства сердечно поздравляем Вас с замечательным ${j.age}-летним юбилеем! Желаем крепкого здоровья, неиссякаемой энергии, благополучия и новых трудовых успехов!"\n\n`;
+      });
+
+      const change = confirm(msg + "\nХотите изменить размер юбилейной премии первого юбиляра?");
+      if (change) {
+        const bonus = prompt(`Введите юбилейную премию для ${jubilees[0].emp.name} (руб.):`, jubilees[0].emp.jubileeBonus);
+        if (bonus && !isNaN(bonus) && Number(bonus) >= 0) {
+          jubilees[0].emp.jubileeBonus = Number(bonus);
+          render();
+          alert("Юбилейная премия сохранена!");
+        }
+      }
+    }
+
     // Event listeners
     document.getElementById("btnPrevMonth").onclick = () => { month--; if (month < 1) { month = 12; year--; } render(); };
     document.getElementById("btnNextMonth").onclick = () => { month++; if (month > 12) { month = 1; year++; } render(); };
     document.getElementById("cmbDept").onchange = (e) => { currentDept = e.target.value; render(); };
+    document.getElementById("btnJubilees").onclick = showJubileesDialog;
 
     document.getElementById("tabBtnMatrix").onclick = () => {
       document.getElementById("viewMatrix").classList.remove("hidden");
@@ -307,19 +407,22 @@
     };
 
     document.getElementById("btnExportCsv").onclick = () => {
-      let csv = "ФИО;Должность;Отдел;Дневная ставка;Отработано смен;Оклад;Больничные;Отпускные;Премия;ИТОГО\\n";
+      let csv = "ФИО;Дата рождения;Возраст;Должность;Отдел;Дневная ставка;Отработано смен;Оклад;Больничные;Отпускные;Декретные;Премия;Юбилейная премия;ИТОГО\\n";
       const daysCount = getDaysInMonth(year, month);
       employees.forEach(emp => {
-        let actual = 0, sick = 0, vac = 0;
+        let actual = 0, sick = 0, vac = 0, mat = 0;
         for (let d = 1; d <= daysCount; d++) {
           const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
           const eff = (overrides[`${emp.id}_${dateStr}`] || {}).status || getBaseStatus(emp, dateStr);
           if (eff === "WORK" || eff === "UNPLANNED_WORK") actual++;
           if (eff === "SICK") sick++;
           if (eff === "VACATION") vac++;
+          if (eff === "MATERNITY") mat++;
         }
-        const total = (actual * emp.rate) + (sick * emp.rate * 0.8) + (vac * emp.rate * 1.0) + emp.bonus;
-        csv += `${emp.name};${emp.pos};${emp.dept};${emp.rate};${actual};${actual * emp.rate};${sick * emp.rate * 0.8};${vac * emp.rate};${emp.bonus};${total}\\n`;
+        const matPay = (mat * emp.rate * 1.0) + (emp.maternityAllowance || 0);
+        const jubPay = emp.jubileeBonus || 0;
+        const total = (actual * emp.rate) + (sick * emp.rate * 0.8) + (vac * emp.rate * 1.0) + matPay + emp.bonus + jubPay;
+        csv += `${emp.name};${emp.birthDate};${emp.pos};${emp.dept};${emp.rate};${actual};${actual * emp.rate};${sick * emp.rate * 0.8};${vac * emp.rate};${matPay};${emp.bonus};${jubPay};${total}\\n`;
       });
       const blob = new Blob(["\\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Calendar as CalendarIcon, HeartPulse, Sun, AlertTriangle, Check, Layers } from 'lucide-react';
+import { X, Calendar as CalendarIcon, HeartPulse, Sun, AlertTriangle, Check, Layers, Baby } from 'lucide-react';
 import { Employee, ShiftOverride, ShiftStatus } from '../types/schedule.ts';
 import { formatDate, parseDate, diffDays, formatCurrency } from '../utils/scheduleCalculator.ts';
 
@@ -43,6 +43,7 @@ export const BatchPeriodModal: React.FC<BatchPeriodModalProps> = ({
     setActionType(newStatus);
     if (newStatus === 'VACATION') setNote('Ежегодный оплачиваемый отпуск');
     else if (newStatus === 'SICK') setNote('Больничный лист');
+    else if (newStatus === 'MATERNITY') setNote('Отпуск по беременности и родам (декрет)');
     else if (newStatus === 'UNPLANNED_OFF') setNote('Внеплановые отгулы');
     else if (newStatus === 'UNPLANNED_WORK') setNote('Дополнительные рабочие смены');
     else if (newStatus === 'WORK') setNote('Рабочие смены по графику');
@@ -129,11 +130,11 @@ export const BatchPeriodModal: React.FC<BatchPeriodModalProps> = ({
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Тип назначения на выбранные дни:
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               <button
                 type="button"
                 onClick={() => handleActionChange('VACATION')}
-                className={`p-3 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
+                className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   actionType === 'VACATION'
                     ? 'border-teal-500 bg-teal-50 text-teal-800 ring-1 ring-teal-500'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -147,7 +148,7 @@ export const BatchPeriodModal: React.FC<BatchPeriodModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleActionChange('SICK')}
-                className={`p-3 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
+                className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   actionType === 'SICK'
                     ? 'border-rose-500 bg-rose-50 text-rose-800 ring-1 ring-rose-500'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -160,8 +161,22 @@ export const BatchPeriodModal: React.FC<BatchPeriodModalProps> = ({
 
               <button
                 type="button"
+                onClick={() => handleActionChange('MATERNITY')}
+                className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
+                  actionType === 'MATERNITY'
+                    ? 'border-purple-500 bg-purple-50 text-purple-900 ring-1 ring-purple-500'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Baby className="w-4 h-4 text-purple-600" />
+                <span className="text-xs font-bold">Декрет (Д)</span>
+                <span className="text-[10px] text-purple-700">БиР / Уход</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => handleActionChange('UNPLANNED_OFF')}
-                className={`p-3 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
+                className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   actionType === 'UNPLANNED_OFF'
                     ? 'border-amber-500 bg-amber-50 text-amber-900 ring-1 ring-amber-500'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -175,7 +190,7 @@ export const BatchPeriodModal: React.FC<BatchPeriodModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleActionChange('UNPLANNED_WORK')}
-                className={`p-3 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
+                className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   actionType === 'UNPLANNED_WORK'
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-500'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'

@@ -6,6 +6,7 @@ import {
   Filter,
   Info,
   Search,
+  Cake,
 } from 'lucide-react';
 import { DayShiftInfo, Employee, EmployeeMonthCalculation, ShiftOverride, ShiftStatus } from '../types/schedule.ts';
 import {
@@ -198,8 +199,14 @@ export const ScheduleMatrix: React.FC<ScheduleMatrixProps> = ({
                             {emp.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-semibold text-slate-900 truncate text-xs">
+                            <div className="font-semibold text-slate-900 truncate text-xs flex items-center gap-1">
                               <span title={emp.name}>{emp.name}</span>
+                              {payroll?.isJubileeThisMonth && (
+                                <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-amber-100 text-amber-900 font-bold text-[9px] border border-amber-300" title={`Юбилей: ${payroll.jubileeAge} лет!`}>
+                                  <Cake className="w-2.5 h-2.5 text-amber-600" />
+                                  <span>{payroll.jubileeAge}л</span>
+                                </span>
+                              )}
                             </div>
                             <div className="text-[11px] text-slate-500 truncate flex items-center gap-1 mt-0.5">
                               <span>{emp.position}</span>

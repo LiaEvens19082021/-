@@ -13,6 +13,7 @@ namespace ShiftScheduleApp
         Vacation,          // ОТ - Оплачиваемый отпуск
         VacationUnpaid,    // ДО - Отпуск без сохранения зарплаты
         Sick,              // Б - Больничный лист
+        Maternity,         // Д - Декретный отпуск (БиР / уход за ребенком)
         Absence            // ПР - Прогул / неявка
     }
 
@@ -35,9 +36,13 @@ namespace ShiftScheduleApp
         public ScheduleType Schedule { get; set; }
         public int ShiftHours { get; set; }
         public DateTime AnchorDate { get; set; }
+        public DateTime? BirthDate { get; set; }
         public decimal MonthlyBonus { get; set; }
+        public decimal JubileeBonus { get; set; }
         public decimal SickLeaveCompensationPercent { get; set; }
         public decimal VacationCompensationPercent { get; set; }
+        public decimal MaternityPayPercent { get; set; }
+        public decimal MaternityMonthlyAllowance { get; set; }
 
         public Employee()
         {
@@ -49,9 +54,13 @@ namespace ShiftScheduleApp
             Schedule = ScheduleType.TwoTwo;
             ShiftHours = 12;
             AnchorDate = new DateTime(2026, 11, 1);
+            BirthDate = null;
             MonthlyBonus = 0;
+            JubileeBonus = 0;
             SickLeaveCompensationPercent = 80;
             VacationCompensationPercent = 100;
+            MaternityPayPercent = 100;
+            MaternityMonthlyAllowance = 0;
         }
     }
 
@@ -89,6 +98,18 @@ namespace ShiftScheduleApp
         }
     }
 
+    public class JubileeInfo
+    {
+        public string EmployeeId { get; set; }
+        public string EmployeeName { get; set; }
+        public string Position { get; set; }
+        public string Department { get; set; }
+        public DateTime BirthDate { get; set; }
+        public int Age { get; set; }
+        public decimal Bonus { get; set; }
+        public string CongratulationText { get; set; }
+    }
+
     public class PayrollResult
     {
         public Employee Employee { get; set; }
@@ -97,12 +118,20 @@ namespace ShiftScheduleApp
         public int UnplannedWorkedShifts { get; set; }
         public int SickDays { get; set; }
         public int VacationDays { get; set; }
+        public int MaternityDays { get; set; }
         public int TotalHours { get; set; }
         public decimal BasePay { get; set; }
         public decimal SickPay { get; set; }
         public decimal VacationPay { get; set; }
+        public decimal MaternityPay { get; set; }
         public decimal BonusPay { get; set; }
-        public decimal TotalPayout => BasePay + SickPay + VacationPay + BonusPay;
+        public decimal JubileeBonusPay { get; set; }
+        public bool IsJubileeThisMonth { get; set; }
+        public int JubileeAge { get; set; }
+        public decimal TotalPayout
+        {
+            get { return BasePay + SickPay + VacationPay + MaternityPay + BonusPay + JubileeBonusPay; }
+        }
     }
 
     public static class ScheduleEngine
@@ -197,11 +226,32 @@ namespace ShiftScheduleApp
             int unplanned = shifts.Count(s => s.EffectiveStatus == ShiftStatus.UnplannedWork);
             int sickDays = shifts.Count(s => s.EffectiveStatus == ShiftStatus.Sick);
             int vacationDays = shifts.Count(s => s.EffectiveStatus == ShiftStatus.Vacation);
+            int maternityDays = shifts.Count(s => s.EffectiveStatus == ShiftStatus.Maternity);
             int totalHours = shifts.Sum(s => s.Hours);
 
             decimal basePay = actual * emp.DailyRate;
             decimal sickPay = sickDays * emp.DailyRate * (emp.SickLeaveCompensationPercent / 100m);
             decimal vacationPay = vacationDays * emp.DailyRate * (emp.VacationCompensationPercent / 100m);
+            decimal maternityPay = (maternityDays * emp.DailyRate * (emp.MaternityPayPercent / 100m)) +
+                                  (maternityDays > 0 ? emp.MaternityMonthlyAllowance : 0m);
+
+            bool isJubilee = false;
+            int jubileeAge = 0;
+            decimal jubileeBonus = 0m;
+
+            if (emp.BirthDate.HasValue && shifts.Count > 0)
+            {
+                int curYear = shifts[0].Date.Year;
+                int curMonth = shifts[0].Date.Month;
+                int age = curYear - emp.BirthDate.Value.Year;
+
+                if (emp.BirthDate.Value.Month == curMonth && age >= 50 && (age % 5 == 0))
+                {
+                    isJubilee = true;
+                    jubileeAge = age;
+                    jubileeBonus = emp.JubileeBonus > 0 ? emp.JubileeBonus : 10000m;
+                }
+            }
 
             return new PayrollResult
             {
@@ -211,12 +261,26 @@ namespace ShiftScheduleApp
                 UnplannedWorkedShifts = unplanned,
                 SickDays = sickDays,
                 VacationDays = vacationDays,
+                MaternityDays = maternityDays,
                 TotalHours = totalHours,
                 BasePay = basePay,
                 SickPay = sickPay,
                 VacationPay = vacationPay,
-                BonusPay = emp.MonthlyBonus
+                MaternityPay = maternityPay,
+                BonusPay = emp.MonthlyBonus,
+                IsJubileeThisMonth = isJubilee,
+                JubileeAge = jubileeAge,
+                JubileeBonusPay = jubileeBonus
             };
+        }
+
+        public static string GetJubileeGreeting(string name, int age, string position, string department)
+        {
+            return "Глубокоуважаемый(ая) " + name + "!\n\n" +
+                   "От всего коллектива и руководства предприятия сердечно поздравляем Вас со знаменательным юбилеем — " + age + " лет!\n\n" +
+                   "Ваш добросовестный труд на позиции «" + position + "», верность профессии и высокий профессионализм вносят неоценимый вклад в развитие отдела «" + department + "». " +
+                   "Вы заслужили искреннее признание и уважение коллег.\n\n" +
+                   "Желаем Вам крепкого здоровья, неиссякаемой жизненной энергии, семейного счастья, оптимизма и благополучия на долгие годы!";
         }
     }
 }

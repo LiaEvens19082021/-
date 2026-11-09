@@ -15,6 +15,7 @@ export type ShiftStatus =
   | 'VACATION'         // Ежегодный оплачиваемый отпуск (ОТ)
   | 'VACATION_UNPAID'  // Отпуск без сохранения зарплаты (ДО)
   | 'SICK'             // Больничный лист (Б)
+  | 'MATERNITY'        // Декретный отпуск / по уходу за ребенком (Д)
   | 'ABSENCE';         // Прогул / неявка (ПР)
 
 export interface Employee {
@@ -30,7 +31,11 @@ export interface Employee {
   cycleStartDate: string;       // Дата отсчёта графика (YYYY-MM-DD)
   sickPayPercentage: number;    // % оплаты больничного (например 80% или 100%)
   vacationPayPercentage: number;// % оплаты отпускного дня (обычно 100%)
+  birthDate?: string;           // Дата рождения (YYYY-MM-DD)
+  maternityPayPercentage?: number; // % оплаты декрета от ставки (по умолчанию 100%)
+  maternityMonthlyAllowance?: number; // Ежемесячное фиксированное пособие по уходу за ребенком (руб.)
   monthlyBonus: number;         // Премия за месяц (руб.)
+  jubileeBonus?: number;        // Начисленная разовая юбилейная премия (руб.)
   avatarColor: string;
   active: boolean;
 }
@@ -50,7 +55,7 @@ export interface DayShiftInfo {
   dayName: string;              // Пн, Вт, Ср, ...
   isCalendarWeekend: boolean;   // Сб или Вс
   baseStatus: 'WORK' | 'OFF';   // Базовый график без переопределений
-  effectiveStatus: ShiftStatus; // Итоговый статус с учётом отпуска/больничного/внепланового
+  effectiveStatus: ShiftStatus; // Итоговый статус с учётом отпуска/больничного/декрета
   effectiveHours: number;       // Отработанные часы (если рабочий день)
   isOverridden: boolean;        // Был ли изменён статус вручную
   overrideNote?: string;
@@ -67,6 +72,7 @@ export interface EmployeeMonthCalculation {
   vacationDays: number;         // Дни оплачиваемого отпуска
   vacationUnpaidDays: number;   // Дни отпуска без оплаты
   sickDays: number;             // Дни больничного
+  maternityDays: number;        // Дни декретного отпуска (Д)
   absenceDays: number;          // Прогулы
   totalOffDays: number;         // Всего выходных дней
   totalWorkedHours: number;     // Сумма часов
@@ -74,11 +80,31 @@ export interface EmployeeMonthCalculation {
   // Финансы
   dailyRate: number;            // Текущая ставка за день
   basePay: number;              // Оплата за отработанные дни (actualWorkedDays * dailyRate)
-  unplannedWorkPay: number;     // Доплата за внеплановые смены (включена или доп. бонус)
+  unplannedWorkPay: number;     // Доплата за внеплановые смены
   sickPay: number;              // Оплата больничного (дни * ставка * %/100)
   vacationPay: number;          // Оплата отпуска (дни * ставка * %/100)
-  monthlyBonus: number;         // Премия
+  maternityPay: number;         // Декретные выплаты и пособия (руб.)
+  monthlyBonus: number;         // Обычная премия
+  jubileeBonus: number;         // Юбилейная выплата к круглой дате
   totalPayout: number;          // ИТОГО к выплате
+  
+  // Юбилей и возраст
+  age?: number;
+  isJubileeThisMonth: boolean;
+  jubileeAge?: number;
+  birthdayDayOfMonth?: number;
+}
+
+export interface JubileeCelebration {
+  employeeId: string;
+  employeeName: string;
+  position: string;
+  department: string;
+  birthDate: string;
+  dayOfMonth: number;
+  age: number; // 50, 55, 60, 65, 70...
+  congratulationText: string;
+  recommendedBonus: number;
 }
 
 export interface StatusMeta {

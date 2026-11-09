@@ -163,3 +163,96 @@ test('rate change dynamically recalculates salary', () => {
   assert.equal(payrollAt5000.basePay, payrollAt4000.actualWorkedDays * 5000);
   assert.ok(payrollAt5000.totalPayout > payrollAt4000.totalPayout);
 });
+
+test('maternity leave (декрет) and payments calculation', () => {
+  const empOnMaternity: Employee = {
+    id: 'emp-mat',
+    name: 'Марина Соколова',
+    position: 'Технолог',
+    department: 'Производство',
+    dailyRate: 3500,
+    shiftHours: 8,
+    scheduleType: '5/2',
+    cycleStartDate: '2026-11-01',
+    sickPayPercentage: 80,
+    vacationPayPercentage: 100,
+    maternityPayPercentage: 100,
+    maternityMonthlyAllowance: 15000,
+    monthlyBonus: 0,
+    avatarColor: 'from-purple-600 to-indigo-600',
+    active: true,
+  };
+
+  // 10 days of maternity leave
+  const overrides: Record<string, ShiftOverride> = {};
+  for (let i = 1; i <= 10; i++) {
+    const d = String(i).padStart(2, '0');
+    overrides[`emp-mat_2026-11-${d}`] = {
+      employeeId: 'emp-mat',
+      date: `2026-11-${d}`,
+      status: 'MATERNITY',
+      note: 'Декретный отпуск',
+    };
+  }
+
+  const shifts = getEmployeeMonthShifts(empOnMaternity, 2026, 11, overrides);
+  const payroll = calculateEmployeeMonthlyPayroll(empOnMaternity, 2026, 11, shifts);
+
+  assert.equal(payroll.maternityDays, 10);
+  // 10 days * 3500 * 1.0 + 15000 allowance = 35000 + 15000 = 50000
+  assert.equal(payroll.maternityPay, 50000);
+  assert.ok(payroll.totalPayout >= 50000);
+});
+
+test('jubilee detection starting from 50 years and bonus allocation', () => {
+  const jubilar50: Employee = {
+    id: 'emp-jub-50',
+    name: 'Иванов Алексей Петрович',
+    position: 'Мастер',
+    department: 'Производство',
+    dailyRate: 4000,
+    shiftHours: 8,
+    scheduleType: '5/2',
+    cycleStartDate: '2026-11-01',
+    birthDate: '1976-11-15', // Turns 50 in November 2026!
+    sickPayPercentage: 80,
+    vacationPayPercentage: 100,
+    monthlyBonus: 0,
+    jubileeBonus: 12000,
+    avatarColor: '#3b82f6',
+    active: true,
+  };
+
+  const nonJubilar: Employee = {
+    id: 'emp-non-jub',
+    name: 'Петров Иван',
+    position: 'Оператор',
+    department: 'Производство',
+    dailyRate: 3000,
+    shiftHours: 8,
+    scheduleType: '5/2',
+    cycleStartDate: '2026-11-01',
+    birthDate: '1984-11-20', // Turns 42 (not a jubilee!)
+    sickPayPercentage: 80,
+    vacationPayPercentage: 100,
+    monthlyBonus: 0,
+    avatarColor: '#3b82f6',
+    active: true,
+  };
+
+  const shifts50 = getEmployeeMonthShifts(jubilar50, 2026, 11, {});
+  const payroll50 = calculateEmployeeMonthlyPayroll(jubilar50, 2026, 11, shifts50);
+
+  assert.equal(payroll50.age, 50);
+  assert.equal(payroll50.isJubileeThisMonth, true);
+  assert.equal(payroll50.jubileeAge, 50);
+  assert.equal(payroll50.jubileeBonus, 12000);
+  assert.ok(payroll50.totalPayout >= 12000);
+
+  const shiftsNon = getEmployeeMonthShifts(nonJubilar, 2026, 11, {});
+  const payrollNon = calculateEmployeeMonthlyPayroll(nonJubilar, 2026, 11, shiftsNon);
+
+  assert.equal(payrollNon.age, 42);
+  assert.equal(payrollNon.isJubileeThisMonth, false);
+  assert.equal(payrollNon.jubileeBonus, 0);
+});

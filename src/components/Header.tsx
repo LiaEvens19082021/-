@@ -9,12 +9,13 @@ import {
   DollarSign,
   FileSpreadsheet,
   Layers,
-  HeartPulse,
   Sun,
   RotateCcw,
+  Cake,
+  Baby,
 } from 'lucide-react';
 import { RUSSIAN_MONTHS, formatCurrency } from '../utils/scheduleCalculator.ts';
-import { EmployeeMonthCalculation } from '../types/schedule.ts';
+import { EmployeeMonthCalculation, JubileeCelebration } from '../types/schedule.ts';
 
 interface HeaderProps {
   year: number;
@@ -25,9 +26,11 @@ interface HeaderProps {
   activeTab: 'matrix' | 'payroll' | 'calendar';
   setActiveTab: (tab: 'matrix' | 'payroll' | 'calendar') => void;
   payrollList: EmployeeMonthCalculation[];
+  jubilees: JubileeCelebration[];
   onOpenAddEmployee: () => void;
   onOpenBatchPeriod: () => void;
   onOpenBulkSchedule: () => void;
+  onOpenJubileeModal: () => void;
   onExportCsv: () => void;
   onResetData: () => void;
   selectedDepartment: string;
@@ -44,9 +47,11 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   payrollList,
+  jubilees,
   onOpenAddEmployee,
   onOpenBatchPeriod,
   onOpenBulkSchedule,
+  onOpenJubileeModal,
   onExportCsv,
   onResetData,
   selectedDepartment,
@@ -59,6 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
   const totalUnplannedShifts = payrollList.reduce((acc, p) => acc + p.unplannedWorkDays, 0);
   const totalSickDays = payrollList.reduce((acc, p) => acc + p.sickDays, 0);
   const totalVacationDays = payrollList.reduce((acc, p) => acc + p.vacationDays, 0);
+  const totalMaternityDays = payrollList.reduce((acc, p) => acc + (p.maternityDays || 0), 0);
   const totalPayrollFund = payrollList.reduce((acc, p) => acc + p.totalPayout, 0);
 
   const monthName = RUSSIAN_MONTHS[month - 1];
@@ -151,6 +157,34 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
+        {/* Jubilee Banner (when someone celebrates milestone birthday >= 50) */}
+        {jubilees.length > 0 && (
+          <div className="mt-3 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/70 border border-amber-300 rounded-xl px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs animate-in fade-in">
+            <div className="flex items-center gap-2.5 text-xs text-amber-950">
+              <span className="p-1 bg-amber-200/80 text-amber-800 rounded-lg shrink-0">
+                <Cake className="w-4 h-4" />
+              </span>
+              <div>
+                <span className="font-bold text-amber-900">
+                  🎉 Юбилей в {monthName.toLowerCase()} ({jubilees.length} чел.):
+                </span>{' '}
+                <span>
+                  {jubilees.map((j) => `${j.employeeName} — ${j.age} лет (${j.dayOfMonth} ${monthName.toLowerCase()})`).join('; ')}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onOpenJubileeModal}
+              className="flex items-center justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xs transition active:scale-95 shrink-0"
+            >
+              <Cake className="w-3.5 h-3.5" />
+              <span>Поздравить юбиляра</span>
+            </button>
+          </div>
+        )}
+
         {/* View Switcher Tabs & Tools */}
         <div className="mt-3.5 pt-3 border-t border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           {/* Main Tabs */}
@@ -199,11 +233,25 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={onOpenJubileeModal}
+              title="Поздравление работников с юбилеем начиная с 50 лет"
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition shadow-2xs ${
+                jubilees.length > 0
+                  ? 'bg-amber-100 text-amber-950 border-amber-300 hover:bg-amber-200 font-semibold'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
+              }`}
+            >
+              <Cake className={`w-3.5 h-3.5 ${jubilees.length > 0 ? 'text-amber-600' : 'text-slate-400'}`} />
+              <span>Юбиляры ({jubilees.length})</span>
+            </button>
+
+            <button
+              type="button"
               onClick={onOpenBatchPeriod}
               className="flex items-center gap-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg shadow-2xs transition"
             >
               <Sun className="w-3.5 h-3.5 text-amber-500" />
-              <span>Отпуск / Больничный на период</span>
+              <span>Отпуск / Больничный / Декрет</span>
             </button>
 
             <button
@@ -236,53 +284,61 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Clear, Airy KPI Strip (Light Theme) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mt-3 pt-3 border-t border-slate-100">
-          <div className="bg-slate-50/80 rounded-xl px-3.5 py-2.5 border border-slate-200/80">
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-3 pt-3 border-t border-slate-100">
+          <div className="bg-slate-50/80 rounded-xl px-3 py-2 border border-slate-200/80">
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
               <Users className="w-3.5 h-3.5 text-blue-600" />
               <span>Сотрудников</span>
             </div>
-            <div className="text-lg font-bold text-slate-900 mt-0.5">{totalEmployees} чел.</div>
+            <div className="text-base font-bold text-slate-900 mt-0.5">{totalEmployees} чел.</div>
           </div>
 
-          <div className="bg-slate-50/80 rounded-xl px-3.5 py-2.5 border border-slate-200/80">
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+          <div className="bg-slate-50/80 rounded-xl px-3 py-2 border border-slate-200/80">
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
               <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
               <span>Отработано смен</span>
             </div>
-            <div className="text-lg font-bold text-slate-900 mt-0.5">
+            <div className="text-base font-bold text-slate-900 mt-0.5">
               {totalActualShifts}{' '}
-              <span className="text-xs font-normal text-slate-500">/ план {totalPlannedShifts}</span>
+              <span className="text-xs font-normal text-slate-500">/ {totalPlannedShifts}</span>
               {totalUnplannedShifts > 0 && (
-                <span className="ml-1 text-xs text-indigo-700 font-semibold">
-                  (+{totalUnplannedShifts} внеплан.)
+                <span className="ml-1 text-[11px] text-indigo-700 font-semibold">
+                  (+{totalUnplannedShifts})
                 </span>
               )}
             </div>
           </div>
 
-          <div className="bg-slate-50/80 rounded-xl px-3.5 py-2.5 border border-slate-200/80">
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+          <div className="bg-slate-50/80 rounded-xl px-3 py-2 border border-slate-200/80">
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
               <HeartPulse className="w-3.5 h-3.5 text-rose-600" />
               <span>Больничные</span>
             </div>
-            <div className="text-lg font-bold text-rose-700 mt-0.5">{totalSickDays} дн.</div>
+            <div className="text-base font-bold text-rose-700 mt-0.5">{totalSickDays} дн.</div>
           </div>
 
-          <div className="bg-slate-50/80 rounded-xl px-3.5 py-2.5 border border-slate-200/80">
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+          <div className="bg-slate-50/80 rounded-xl px-3 py-2 border border-slate-200/80">
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
               <Sun className="w-3.5 h-3.5 text-teal-600" />
               <span>Отпуска</span>
             </div>
-            <div className="text-lg font-bold text-teal-700 mt-0.5">{totalVacationDays} дн.</div>
+            <div className="text-base font-bold text-teal-700 mt-0.5">{totalVacationDays} дн.</div>
           </div>
 
-          <div className="col-span-2 sm:col-span-4 lg:col-span-1 bg-emerald-50/70 rounded-xl px-3.5 py-2.5 border border-emerald-200">
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-800 font-medium">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Фонд зарплаты (ФОТ)</span>
+          <div className="bg-purple-50/80 rounded-xl px-3 py-2 border border-purple-200">
+            <div className="flex items-center gap-1 text-[11px] text-purple-800 font-medium">
+              <Baby className="w-3.5 h-3.5 text-purple-600" />
+              <span>Декрет / БиР</span>
             </div>
-            <div className="text-lg font-extrabold text-emerald-800 mt-0.5 truncate">
+            <div className="text-base font-bold text-purple-800 mt-0.5">{totalMaternityDays} дн.</div>
+          </div>
+
+          <div className="bg-emerald-50/70 rounded-xl px-3 py-2 border border-emerald-200 col-span-2 sm:col-span-1">
+            <div className="flex items-center gap-1 text-[11px] text-emerald-800 font-medium">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-700" />
+              <span>ФОТ с выплатами</span>
+            </div>
+            <div className="text-base font-extrabold text-emerald-800 mt-0.5 truncate">
               {formatCurrency(totalPayrollFund)}
             </div>
           </div>

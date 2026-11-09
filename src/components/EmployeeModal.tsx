@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, DollarSign, Calendar, Clock, HeartPulse, Sparkles, Trash2, Check } from 'lucide-react';
+import { X, User, DollarSign, Calendar, Clock, HeartPulse, Sparkles, Trash2, Check, Cake, Baby, Gift } from 'lucide-react';
 import { Employee, SchedulePatternType } from '../types/schedule.ts';
 import { SCHEDULE_LABELS } from '../utils/scheduleCalculator.ts';
 
@@ -37,12 +37,19 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [shiftHours, setShiftHours] = useState<number>(employee?.shiftHours ?? 8);
   const [scheduleType, setScheduleType] = useState<SchedulePatternType>(employee?.scheduleType || '2/2');
   const [cycleStartDate, setCycleStartDate] = useState(employee?.cycleStartDate || '2026-11-01');
-  const [sickPayPercentage, setSickPayPercentage] = useState<number>(employee?.sickPayPercentage ?? 80);
-  const [vacationPayPercentage, setVacationPayPercentage] = useState<number>(employee?.vacationPayPercentage ?? 100);
-  const [monthlyBonus, setMonthlyBonus] = useState<number>(employee?.monthlyBonus ?? 0);
-  const [avatarColor, setAvatarColor] = useState(
-    employee?.avatarColor || AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
-  );
+  const [birthDate, setBirthDate] = useState(employee?.birthDate || '');
+  const [maternityPayPercentage, setMaternityPayPercentage] = useState<number>(employee?.maternityPayPercentage ?? 100);
+  const [maternityMonthlyAllowance, setMaternityMonthlyAllowance] = useState<number>(employee?.maternityMonthlyAllowance ?? 0);
+  const [jubileeBonus, setJubileeBonus] = useState<number>(employee?.jubileeBonus ?? 10000);
+
+  const calculatedAge = React.useMemo(() => {
+    if (!birthDate) return undefined;
+    const parts = birthDate.split('-').map(Number);
+    if (parts.length < 3 || isNaN(parts[0])) return undefined;
+    return 2026 - parts[0];
+  }, [birthDate]);
+
+  const isJubilee = calculatedAge !== undefined && calculatedAge >= 50 && calculatedAge % 5 === 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +66,11 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       cycleStartDate,
       sickPayPercentage: Math.max(0, Math.min(100, Number(sickPayPercentage))),
       vacationPayPercentage: Math.max(0, Math.min(100, Number(vacationPayPercentage))),
+      birthDate: birthDate.trim() || undefined,
+      maternityPayPercentage: Math.max(0, Math.min(100, Number(maternityPayPercentage))),
+      maternityMonthlyAllowance: Math.max(0, Number(maternityMonthlyAllowance)),
       monthlyBonus: Math.max(0, Number(monthlyBonus)),
+      jubileeBonus: isJubilee ? Math.max(0, Number(jubileeBonus)) : undefined,
       avatarColor,
       active: true,
     };
@@ -289,6 +300,107 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 onChange={(e) => setMonthlyBonus(Number(e.target.value))}
                 className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+          </div>
+
+          {/* BIRTHDAY & JUBILEE (50+ years) */}
+          <div className="p-3.5 bg-amber-50/60 border border-amber-200 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                <Cake className="w-4 h-4 text-amber-600" />
+                <span>Дата рождения и поздравление с юбилеем (от 50 лет)</span>
+              </div>
+              {calculatedAge !== undefined && (
+                <span
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                    isJubilee
+                      ? 'bg-amber-200 text-amber-900 animate-pulse'
+                      : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {calculatedAge} лет {isJubilee && '• 🎉 Юбиляр!'}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Дата рождения:
+                </label>
+                <input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Система автоматически определит юбилеи: 50, 55, 60, 65, 70+ лет
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
+                  <Gift className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Юбилейная выплата (₽):</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  placeholder="10000"
+                  value={jubileeBonus}
+                  onChange={(e) => setJubileeBonus(Number(e.target.value))}
+                  className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Начисляется в месяц юбилея
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* MATERNITY / БиР & УХОД ЗА РЕБЁНКОМ */}
+          <div className="p-3.5 bg-purple-50/60 border border-purple-200 rounded-xl space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
+              <Baby className="w-4 h-4 text-purple-600" />
+              <span>Декрет и пособия (отпуск по БиР и уходу за ребёнком)</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Оплата дней декрета (% от дневной ставки):
+                </label>
+                <select
+                  value={maternityPayPercentage}
+                  onChange={(e) => setMaternityPayPercentage(Number(e.target.value))}
+                  className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value={100}>100% от дневной ставки (стандарт БиР)</option>
+                  <option value={80}>80% от дневной ставки</option>
+                  <option value={40}>40% от ставки (по уходу до 1.5 лет)</option>
+                  <option value={0}>0% (без сохранения заработка)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Ежемесячное пособие по уходу за ребёнком (₽):
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  placeholder="0"
+                  value={maternityMonthlyAllowance}
+                  onChange={(e) => setMaternityMonthlyAllowance(Number(e.target.value))}
+                  className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Фиксированная ежемесячная выплата при нахождении в декрете
+                </p>
+              </div>
             </div>
           </div>
 

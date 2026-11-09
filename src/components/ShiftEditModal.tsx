@@ -61,6 +61,8 @@ export const ShiftEditModal: React.FC<ShiftEditModalProps> = ({
     estimatedDayPay = Math.round(employee.dailyRate * (employee.sickPayPercentage / 100));
   } else if (selectedStatus === 'VACATION') {
     estimatedDayPay = Math.round(employee.dailyRate * (employee.vacationPayPercentage / 100));
+  } else if (selectedStatus === 'MATERNITY') {
+    estimatedDayPay = Math.round(employee.dailyRate * ((employee.maternityPayPercentage ?? 100) / 100));
   }
 
   return (
@@ -132,6 +134,8 @@ export const ShiftEditModal: React.FC<ShiftEditModalProps> = ({
                           ? 'Внеплановый отгул'
                           : meta.code === 'Б'
                           ? `Оплата ${employee.sickPayPercentage}%`
+                          : meta.code === 'Д'
+                          ? `Декрет (${employee.maternityPayPercentage ?? 100}%)`
                           : meta.code === 'ОТ'
                           ? 'Оплачиваемый отпуск'
                           : meta.description}

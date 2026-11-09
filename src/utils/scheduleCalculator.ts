@@ -2,6 +2,7 @@ import type {
   DayShiftInfo,
   Employee,
   EmployeeMonthCalculation,
+  JubileeCelebration,
   SchedulePatternType,
   ShiftOverride,
   ShiftStatus,
@@ -85,6 +86,17 @@ export const STATUS_METAS: Record<ShiftStatus, StatusMeta> = {
     isPaidWork: false,
     isPaidSpecial: true,
     description: 'Больничный лист. Оплачивается по ставке работника с учётом % оплаты больничного.',
+  },
+  MATERNITY: {
+    code: 'Д',
+    label: 'Декретный отпуск',
+    shortLabel: 'Д',
+    bgClass: 'bg-purple-100 text-purple-900 border-purple-300 font-bold hover:bg-purple-200',
+    textClass: 'text-purple-800',
+    borderClass: 'border-purple-300',
+    isPaidWork: false,
+    isPaidSpecial: true,
+    description: 'Отпуск по беременности и родам / по уходу за ребёнком. Выплачивается декретное пособие.',
   },
   ABSENCE: {
     code: 'ПР',
@@ -281,6 +293,7 @@ export function calculateEmployeeMonthlyPayroll(
   let vacationDays = 0;
   let vacationUnpaidDays = 0;
   let sickDays = 0;
+  let maternityDays = 0;
   let absenceDays = 0;
   let totalOffDays = 0;
   let totalWorkedHours = 0;
@@ -315,6 +328,9 @@ export function calculateEmployeeMonthlyPayroll(
       case 'SICK':
         sickDays++;
         break;
+      case 'MATERNITY':
+        maternityDays++;
+        break;
       case 'ABSENCE':
         absenceDays++;
         break;
@@ -337,8 +353,43 @@ export function calculateEmployeeMonthlyPayroll(
   const vacationPercentage = Math.max(0, Math.min(100, employee.vacationPayPercentage ?? 100));
   const vacationPay = Math.round(vacationDays * dailyRate * (vacationPercentage / 100));
 
+  // Maternity pay: maternityDays * dailyRate * (maternityPayPercentage / 100) + fixed monthly allowance
+  const maternityPct = Math.max(0, employee.maternityPayPercentage ?? 100);
+  const maternityDailyPay = Math.round(maternityDays * dailyRate * (maternityPct / 100));
+  const maternityAllowance = maternityDays > 0 ? (employee.maternityMonthlyAllowance || 0) : 0;
+  const maternityPay = maternityDailyPay + maternityAllowance;
+
+  // Jubilee & Birthday calculations (starting from 50 years: 50, 55, 60, 65, 70...)
+  let age: number | undefined;
+  let isJubileeThisMonth = false;
+  let jubileeAge: number | undefined;
+  let birthdayDayOfMonth: number | undefined;
+
+  if (employee.birthDate) {
+    const parts = employee.birthDate.split('-').map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      const bYear = parts[0];
+      const bMonth = parts[1];
+      const bDay = parts[2];
+      const turningAge = year - bYear;
+      age = turningAge;
+      if (bMonth === month) {
+        birthdayDayOfMonth = bDay;
+        if (turningAge >= 50 && turningAge % 5 === 0) {
+          isJubileeThisMonth = true;
+          jubileeAge = turningAge;
+        }
+      }
+    }
+  }
+
+  // Jubilee bonus: customizable or defaults to 10 000 руб. for jubilee
+  const jubileeBonus = isJubileeThisMonth
+    ? (employee.jubileeBonus !== undefined ? employee.jubileeBonus : 10000)
+    : 0;
+
   const monthlyBonus = Math.max(0, employee.monthlyBonus || 0);
-  const totalPayout = basePay + sickPay + vacationPay + monthlyBonus;
+  const totalPayout = basePay + sickPay + vacationPay + maternityPay + monthlyBonus + jubileeBonus;
 
   return {
     employeeId: employee.id,
@@ -351,6 +402,7 @@ export function calculateEmployeeMonthlyPayroll(
     vacationDays,
     vacationUnpaidDays,
     sickDays,
+    maternityDays,
     absenceDays,
     totalOffDays,
     totalWorkedHours,
@@ -359,9 +411,85 @@ export function calculateEmployeeMonthlyPayroll(
     unplannedWorkPay,
     sickPay,
     vacationPay,
+    maternityPay,
     monthlyBonus,
+    jubileeBonus,
     totalPayout,
+    age,
+    isJubileeThisMonth,
+    jubileeAge,
+    birthdayDayOfMonth,
   };
+}
+
+/**
+ * Calculates current or target age from birth date string (YYYY-MM-DD)
+ */
+export function getEmployeeAge(birthDate?: string, targetYear: number = 2026): number | undefined {
+  if (!birthDate) return undefined;
+  const parts = birthDate.split('-').map(Number);
+  if (parts.length < 3 || isNaN(parts[0])) return undefined;
+  return targetYear - parts[0];
+}
+
+/**
+ * Checks whether an age is a milestone Jubilee starting from 50 (50, 55, 60, 65, 70, etc.)
+ */
+export function isJubileeAge(age: number): boolean {
+  return age >= 50 && age % 5 === 0;
+}
+
+/**
+ * Returns warm, official Russian congratulation greeting for jubilee
+ */
+export function getJubileeGreeting(
+  name: string,
+  age: number,
+  position: string,
+  department: string
+): string {
+  return `Глубокоуважаемый(ая) ${name}!
+
+Сердечно поздравляем Вас со знаменательным юбилеем — ${age} лет!
+
+Ваш многолетний добросовестный труд, верность профессии и высокий профессионализм в должности «${position}» служат примером для всего коллектива отдела «${department}». Вы заслужили искреннее уважение коллег благодаря своей душевной щедрости, ответственности и готовности всегда прийти на помощь.
+
+В этот торжественный день примите наши самые тёплые пожелания крепкого здоровья, неиссякаемого оптимизма, семейного уюта, благополучия и долгих лет счастливой, активной жизни! Пусть каждый новый день приносит радость, гармонию и уверенность в завтрашнем дне!`;
+}
+
+/**
+ * Returns all jubilee celebrants for given month and year
+ */
+export function getJubileesInMonth(
+  employees: Employee[],
+  year: number,
+  month: number
+): JubileeCelebration[] {
+  const result: JubileeCelebration[] = [];
+
+  for (const emp of employees) {
+    if (!emp.birthDate) continue;
+    const parts = emp.birthDate.split('-').map(Number);
+    if (parts.length !== 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) continue;
+    const [bYear, bMonth, bDay] = parts;
+    const age = year - bYear;
+
+    if (bMonth === month && isJubileeAge(age)) {
+      result.push({
+        employeeId: emp.id,
+        employeeName: emp.name,
+        position: emp.position,
+        department: emp.department,
+        birthDate: emp.birthDate,
+        dayOfMonth: bDay,
+        age,
+        congratulationText: getJubileeGreeting(emp.name, age, emp.position, emp.department),
+        recommendedBonus: emp.jubileeBonus !== undefined ? emp.jubileeBonus : 10000,
+      });
+    }
+  }
+
+  return result;
 }
 
 /**

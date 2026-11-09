@@ -24,7 +24,9 @@ namespace ShiftScheduleApp
         private Label _lblKpiShifts;
         private Label _lblKpiSick;
         private Label _lblKpiVacation;
+        private Label _lblKpiMaternity;
         private Label _lblKpiPayroll;
+        private Button _btnJubileesHeader;
 
         private TabControl _tabControl;
         private TabPage _tabMatrix;
@@ -62,7 +64,9 @@ namespace ShiftScheduleApp
                     Schedule = ScheduleType.TwoTwo,
                     ShiftHours = 12,
                     AnchorDate = new DateTime(2026, 11, 1),
-                    MonthlyBonus = 5000
+                    BirthDate = new DateTime(1976, 11, 15), // 50 лет в ноябре 2026! Юбилей!
+                    MonthlyBonus = 5000,
+                    JubileeBonus = 15000
                 },
                 new Employee
                 {
@@ -73,7 +77,8 @@ namespace ShiftScheduleApp
                     DailyRate = 3600,
                     Schedule = ScheduleType.TwoTwo,
                     ShiftHours = 12,
-                    AnchorDate = new DateTime(2026, 11, 3)
+                    AnchorDate = new DateTime(2026, 11, 3),
+                    BirthDate = new DateTime(1992, 4, 18)
                 },
                 new Employee
                 {
@@ -84,7 +89,8 @@ namespace ShiftScheduleApp
                     DailyRate = 5200,
                     Schedule = ScheduleType.OneThree,
                     ShiftHours = 24,
-                    AnchorDate = new DateTime(2026, 11, 1)
+                    AnchorDate = new DateTime(2026, 11, 1),
+                    BirthDate = new DateTime(1988, 8, 22)
                 },
                 new Employee
                 {
@@ -94,7 +100,8 @@ namespace ShiftScheduleApp
                     Department = "Финансовый отдел",
                     DailyRate = 4200,
                     Schedule = ScheduleType.FiveTwo,
-                    ShiftHours = 8
+                    ShiftHours = 8,
+                    BirthDate = new DateTime(1995, 3, 12)
                 },
                 new Employee
                 {
@@ -105,7 +112,9 @@ namespace ShiftScheduleApp
                     DailyRate = 3400,
                     Schedule = ScheduleType.ThreeThree,
                     ShiftHours = 10,
-                    AnchorDate = new DateTime(2026, 11, 1)
+                    AnchorDate = new DateTime(2026, 11, 1),
+                    BirthDate = new DateTime(1966, 11, 28), // 60 лет в ноябре 2026! Юбилей!
+                    JubileeBonus = 20000
                 },
                 new Employee
                 {
@@ -116,7 +125,21 @@ namespace ShiftScheduleApp
                     DailyRate = 3800,
                     Schedule = ScheduleType.FiveTwo,
                     ShiftHours = 8,
+                    BirthDate = new DateTime(1985, 9, 5),
                     MonthlyBonus = 7000
+                },
+                new Employee
+                {
+                    Id = "emp-7",
+                    Name = "Соколова Марина Александровна",
+                    Position = "Специалист по кадрам",
+                    Department = "Финансовый отдел",
+                    DailyRate = 3900,
+                    Schedule = ScheduleType.FiveTwo,
+                    ShiftHours = 8,
+                    BirthDate = new DateTime(1993, 6, 10),
+                    MaternityPayPercent = 100,
+                    MaternityMonthlyAllowance = 15000
                 }
             };
 
@@ -136,6 +159,18 @@ namespace ShiftScheduleApp
                 ["emp-5_2026-11-21"] = new ShiftOverride { Status = ShiftStatus.Vacation, Hours = 0, Note = "Очередной отпуск" },
                 ["emp-5_2026-11-22"] = new ShiftOverride { Status = ShiftStatus.Vacation, Hours = 0, Note = "Очередной отпуск" }
             };
+
+            // Декретный отпуск Соколовой М.А. на весь ноябрь 2026
+            for (int d = 1; d <= 30; d++)
+            {
+                string key = "emp-7_2026-11-" + d.ToString("D2");
+                _overrides[key] = new ShiftOverride
+                {
+                    Status = ShiftStatus.Maternity,
+                    Hours = 0,
+                    Note = "Декретный отпуск (по беременности и родам)"
+                };
+            }
         }
 
         private void InitializeComponent()
@@ -235,11 +270,24 @@ namespace ShiftScheduleApp
             };
 
             // Action Buttons
-            Button btnAddEmp = new Button
+            _btnJubileesHeader = new Button
             {
-                Text = "+ Добавить сотрудника",
+                Text = "🎂 Юбиляры месяца (50+)",
                 Location = new Point(1060, 11),
                 Size = new Size(180, 30),
+                BackColor = Color.FromArgb(254, 243, 199),
+                ForeColor = Color.FromArgb(146, 64, 14),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold)
+            };
+            _btnJubileesHeader.FlatAppearance.BorderColor = Color.FromArgb(252, 211, 77);
+            _btnJubileesHeader.Click += BtnJubilees_Click;
+
+            Button btnAddEmp = new Button
+            {
+                Text = "+ Сотрудник",
+                Location = new Point(1250, 11),
+                Size = new Size(120, 30),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -252,15 +300,17 @@ namespace ShiftScheduleApp
             Panel pnlKpi = new Panel
             {
                 Location = new Point(16, 70),
-                Size = new Size(1230, 48),
+                Size = new Size(1350, 48),
                 BackColor = Color.FromArgb(248, 250, 252)
             };
 
-            _lblKpiEmployees = CreateKpiLabel("Сотрудников:", "6 чел.", 10, pnlKpi);
-            _lblKpiShifts = CreateKpiLabel("Отработано смен:", "88 / 95", 250, pnlKpi);
-            _lblKpiSick = CreateKpiLabel("Больничные:", "4 дн.", 520, pnlKpi);
-            _lblKpiVacation = CreateKpiLabel("Отпуска:", "7 дн.", 750, pnlKpi);
-            _lblKpiPayroll = CreateKpiLabel("Фонд зарплаты (ФОТ):", "427 140 ₽", 970, pnlKpi);
+            _lblKpiEmployees = CreateKpiLabel("Сотрудников:", "7 чел.", 10, pnlKpi);
+            _lblKpiShifts = CreateKpiLabel("Отработано смен:", "88 / 95", 190, pnlKpi);
+            _lblKpiSick = CreateKpiLabel("Больничные:", "4 дн.", 420, pnlKpi);
+            _lblKpiVacation = CreateKpiLabel("Отпуска:", "7 дн.", 600, pnlKpi);
+            _lblKpiMaternity = CreateKpiLabel("Декретные:", "30 дн.", 780, pnlKpi);
+            _lblKpiMaternity.ForeColor = Color.FromArgb(107, 33, 168);
+            _lblKpiPayroll = CreateKpiLabel("Фонд зарплаты (ФОТ):", "0 ₽", 970, pnlKpi);
             _lblKpiPayroll.ForeColor = Color.FromArgb(22, 101, 52);
 
             pnlHeader.Controls.Add(lblTitle);
@@ -270,6 +320,7 @@ namespace ShiftScheduleApp
             pnlHeader.Controls.Add(btnNextMonth);
             pnlHeader.Controls.Add(lblDept);
             pnlHeader.Controls.Add(_cmbDept);
+            pnlHeader.Controls.Add(_btnJubileesHeader);
             pnlHeader.Controls.Add(btnAddEmp);
             pnlHeader.Controls.Add(pnlKpi);
 
@@ -309,7 +360,7 @@ namespace ShiftScheduleApp
             Button btnExportCsv = new Button
             {
                 Text = "Экспорт в Excel (CSV)",
-                Size = new Size(180, 28),
+                Size = new Size(160, 28),
                 Location = new Point(16, 8),
                 BackColor = Color.FromArgb(240, 253, 244),
                 ForeColor = Color.FromArgb(22, 101, 52),
@@ -320,25 +371,39 @@ namespace ShiftScheduleApp
 
             Button btnPeriod = new Button
             {
-                Text = "Назначить отпуск / больничный на период",
-                Size = new Size(290, 28),
-                Location = new Point(210, 8),
+                Text = "Назначить период (отпуск/больничный/декрет)",
+                Size = new Size(310, 28),
+                Location = new Point(185, 8),
                 BackColor = Color.FromArgb(241, 245, 249),
                 FlatStyle = FlatStyle.Flat
             };
             btnPeriod.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
             btnPeriod.Click += BtnPeriod_Click;
 
+            Button btnJubileeBottom = new Button
+            {
+                Text = "🎂 Поздравление юбиляров (от 50 лет)",
+                Size = new Size(270, 28),
+                Location = new Point(505, 8),
+                BackColor = Color.FromArgb(254, 243, 199),
+                ForeColor = Color.FromArgb(146, 64, 14),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold)
+            };
+            btnJubileeBottom.FlatAppearance.BorderColor = Color.FromArgb(252, 211, 77);
+            btnJubileeBottom.Click += BtnJubilees_Click;
+
             Label lblHint = new Label
             {
-                Text = "💡 Подсказка: дважды кликните по любой ячейке дня в табеле, чтобы изменить статус смены",
+                Text = "💡 Кликните дважды по ячейке дня для смены статуса",
                 ForeColor = Color.FromArgb(100, 116, 139),
                 AutoSize = true,
-                Location = new Point(520, 13)
+                Location = new Point(785, 14)
             };
 
             pnlBottom.Controls.Add(btnExportCsv);
             pnlBottom.Controls.Add(btnPeriod);
+            pnlBottom.Controls.Add(btnJubileeBottom);
             pnlBottom.Controls.Add(lblHint);
             this.Controls.Add(pnlBottom);
         }
@@ -464,6 +529,7 @@ namespace ShiftScheduleApp
             int totalActual = 0;
             int totalSick = 0;
             int totalVacation = 0;
+            int totalMaternity = 0;
             decimal totalFund = 0;
 
             foreach (Employee emp in filtered)
@@ -474,13 +540,22 @@ namespace ShiftScheduleApp
                 totalActual += pay.ActualWorkedShifts;
                 totalSick += pay.SickDays;
                 totalVacation += pay.VacationDays;
+                totalMaternity += pay.MaternityDays;
                 totalFund += pay.TotalPayout;
             }
 
+            List<JubileeInfo> monthJubilees = ScheduleEngine.GetJubileesInMonth(_employees, _year, _month);
+            _btnJubileesHeader.Text = monthJubilees.Count > 0
+                ? "🎂 Юбиляры (" + monthJubilees.Count + " чел.)"
+                : "🎂 Юбиляры (0)";
+            _btnJubileesHeader.BackColor = monthJubilees.Count > 0 ? Color.FromArgb(254, 243, 199) : Color.FromArgb(241, 245, 249);
+            _btnJubileesHeader.ForeColor = monthJubilees.Count > 0 ? Color.FromArgb(146, 64, 14) : Color.FromArgb(100, 116, 139);
+
             _lblKpiEmployees.Text = "Сотрудников: " + totalEmployees + " чел.";
-            _lblKpiShifts.Text = "Отработано смен: " + totalActual + " / " + totalPlanned;
+            _lblKpiShifts.Text = "Смены факт/план: " + totalActual + " / " + totalPlanned;
             _lblKpiSick.Text = "Больничные: " + totalSick + " дн.";
             _lblKpiVacation.Text = "Отпуска: " + totalVacation + " дн.";
+            _lblKpiMaternity.Text = "Декретные: " + totalMaternity + " дн.";
             _lblKpiPayroll.Text = "Фонд з/п (ФОТ): " + totalFund.ToString("N0") + " ₽";
 
             RefreshMatrixGrid(filtered);
@@ -494,7 +569,7 @@ namespace ShiftScheduleApp
             _gridMatrix.Rows.Clear();
 
             _gridMatrix.Columns.Add("Name", "Сотрудник / График");
-            _gridMatrix.Columns["Name"].Width = 240;
+            _gridMatrix.Columns["Name"].Width = 250;
             _gridMatrix.Columns["Name"].Frozen = true;
 
             int daysInMonth = DateTime.DaysInMonth(_year, _month);
@@ -528,7 +603,12 @@ namespace ShiftScheduleApp
                 PayrollResult pay = ScheduleEngine.CalculatePayroll(emp, shifts);
 
                 object[] rowValues = new object[daysInMonth + 3];
-                rowValues[0] = emp.Name + " (" + emp.Schedule + ")";
+                string nameDisplay = emp.Name;
+                if (pay.IsJubileeThisMonth)
+                {
+                    nameDisplay = "🎂 " + emp.Name + " (" + pay.JubileeAge + "л)";
+                }
+                rowValues[0] = nameDisplay + " [" + emp.Schedule + "]";
 
                 for (int d = 1; d <= daysInMonth; d++)
                 {
@@ -542,6 +622,7 @@ namespace ShiftScheduleApp
                         case ShiftStatus.UnplannedOff: code = "ВВ"; break;
                         case ShiftStatus.Sick: code = "Б"; break;
                         case ShiftStatus.Vacation: code = "ОТ"; break;
+                        case ShiftStatus.Maternity: code = "Д"; break;
                         default: code = "-"; break;
                     }
                     rowValues[d] = code;
@@ -587,6 +668,11 @@ namespace ShiftScheduleApp
                             cell.Style.ForeColor = Color.FromArgb(15, 118, 110);
                             cell.Style.Font = new Font(_gridMatrix.Font, FontStyle.Bold);
                             break;
+                        case ShiftStatus.Maternity:
+                            cell.Style.BackColor = Color.FromArgb(243, 232, 255); // purple
+                            cell.Style.ForeColor = Color.FromArgb(107, 33, 168);
+                            cell.Style.Font = new Font(_gridMatrix.Font, FontStyle.Bold);
+                            break;
                     }
 
                     if (shift.IsOverride)
@@ -603,30 +689,38 @@ namespace ShiftScheduleApp
             _gridPayroll.Rows.Clear();
 
             _gridPayroll.Columns.Add("Name", "ФИО сотрудника");
-            _gridPayroll.Columns["Name"].Width = 240;
+            _gridPayroll.Columns["Name"].Width = 230;
             _gridPayroll.Columns.Add("Dept", "Отдел");
-            _gridPayroll.Columns["Dept"].Width = 140;
+            _gridPayroll.Columns["Dept"].Width = 130;
             _gridPayroll.Columns.Add("Rate", "Ставка/день");
-            _gridPayroll.Columns["Rate"].Width = 110;
-            _gridPayroll.Columns.Add("Shifts", "Смены (факт/план)");
-            _gridPayroll.Columns["Shifts"].Width = 130;
+            _gridPayroll.Columns["Rate"].Width = 100;
+            _gridPayroll.Columns.Add("Shifts", "Смены");
+            _gridPayroll.Columns["Shifts"].Width = 100;
             _gridPayroll.Columns.Add("Hours", "Часы");
-            _gridPayroll.Columns["Hours"].Width = 80;
-            _gridPayroll.Columns.Add("BasePay", "Оклад за смены");
-            _gridPayroll.Columns["BasePay"].Width = 120;
+            _gridPayroll.Columns["Hours"].Width = 70;
+            _gridPayroll.Columns.Add("BasePay", "Оклад");
+            _gridPayroll.Columns["BasePay"].Width = 100;
             _gridPayroll.Columns.Add("SickPay", "Больничные");
-            _gridPayroll.Columns["SickPay"].Width = 110;
+            _gridPayroll.Columns["SickPay"].Width = 100;
             _gridPayroll.Columns.Add("VacPay", "Отпускные");
-            _gridPayroll.Columns["VacPay"].Width = 110;
+            _gridPayroll.Columns["VacPay"].Width = 100;
+            _gridPayroll.Columns.Add("MatPay", "Декретные");
+            _gridPayroll.Columns["MatPay"].Width = 100;
             _gridPayroll.Columns.Add("Bonus", "Премия");
-            _gridPayroll.Columns["Bonus"].Width = 100;
+            _gridPayroll.Columns["Bonus"].Width = 85;
+            _gridPayroll.Columns.Add("Jubilee", "Юбилей (50+)");
+            _gridPayroll.Columns["Jubilee"].Width = 110;
             _gridPayroll.Columns.Add("Total", "ИТОГО К ВЫПЛАТЕ");
-            _gridPayroll.Columns["Total"].Width = 140;
+            _gridPayroll.Columns["Total"].Width = 130;
 
             foreach (Employee emp in filtered)
             {
                 List<DayShiftInfo> shifts = ScheduleEngine.CalculateMonthShifts(emp, _year, _month, _overrides);
                 PayrollResult pay = ScheduleEngine.CalculatePayroll(emp, shifts);
+
+                string jubileeText = pay.JubileeBonusPay > 0
+                    ? ("🎂 " + pay.JubileeBonusPay.ToString("N0") + " ₽")
+                    : (pay.IsJubileeThisMonth ? "🎂 Юбиляр!" : "—");
 
                 int rowIdx = _gridPayroll.Rows.Add(
                     emp.Name,
@@ -637,13 +731,28 @@ namespace ShiftScheduleApp
                     pay.BasePay.ToString("N0") + " ₽",
                     pay.SickPay.ToString("N0") + " ₽",
                     pay.VacationPay.ToString("N0") + " ₽",
+                    pay.MaternityPay.ToString("N0") + " ₽",
                     pay.BonusPay.ToString("N0") + " ₽",
+                    jubileeText,
                     pay.TotalPayout.ToString("N0") + " ₽"
                 );
 
                 _gridPayroll.Rows[rowIdx].Tag = emp;
                 _gridPayroll.Rows[rowIdx].Cells["Total"].Style.Font = new Font(_gridPayroll.Font, FontStyle.Bold);
                 _gridPayroll.Rows[rowIdx].Cells["Total"].Style.ForeColor = Color.FromArgb(22, 101, 52);
+
+                if (pay.MaternityDays > 0)
+                {
+                    _gridPayroll.Rows[rowIdx].Cells["MatPay"].Style.ForeColor = Color.FromArgb(107, 33, 168);
+                    _gridPayroll.Rows[rowIdx].Cells["MatPay"].Style.Font = new Font(_gridPayroll.Font, FontStyle.Bold);
+                }
+
+                if (pay.IsJubileeThisMonth)
+                {
+                    _gridPayroll.Rows[rowIdx].Cells["Jubilee"].Style.BackColor = Color.FromArgb(254, 243, 199);
+                    _gridPayroll.Rows[rowIdx].Cells["Jubilee"].Style.ForeColor = Color.FromArgb(146, 64, 14);
+                    _gridPayroll.Rows[rowIdx].Cells["Jubilee"].Style.Font = new Font(_gridPayroll.Font, FontStyle.Bold);
+                }
             }
         }
 
@@ -653,22 +762,40 @@ namespace ShiftScheduleApp
             _gridEmployees.Rows.Clear();
 
             _gridEmployees.Columns.Add("Name", "ФИО");
-            _gridEmployees.Columns["Name"].Width = 260;
+            _gridEmployees.Columns["Name"].Width = 240;
+            _gridEmployees.Columns.Add("BirthDate", "Дата рождения");
+            _gridEmployees.Columns["BirthDate"].Width = 120;
+            _gridEmployees.Columns.Add("Age", "Возраст / Юбилей");
+            _gridEmployees.Columns["Age"].Width = 140;
             _gridEmployees.Columns.Add("Position", "Должность");
-            _gridEmployees.Columns["Position"].Width = 220;
+            _gridEmployees.Columns["Position"].Width = 200;
             _gridEmployees.Columns.Add("Dept", "Отдел");
-            _gridEmployees.Columns["Dept"].Width = 160;
+            _gridEmployees.Columns["Dept"].Width = 150;
             _gridEmployees.Columns.Add("Schedule", "График");
-            _gridEmployees.Columns["Schedule"].Width = 120;
+            _gridEmployees.Columns["Schedule"].Width = 110;
             _gridEmployees.Columns.Add("Rate", "Дневная ставка");
-            _gridEmployees.Columns["Rate"].Width = 130;
+            _gridEmployees.Columns["Rate"].Width = 120;
             _gridEmployees.Columns.Add("Hours", "Часов в смене");
-            _gridEmployees.Columns["Hours"].Width = 120;
+            _gridEmployees.Columns["Hours"].Width = 110;
 
             foreach (Employee emp in filtered)
             {
+                string birthStr = emp.BirthDate.HasValue ? emp.BirthDate.Value.ToString("dd.MM.yyyy") : "—";
+                string ageStr = "—";
+                bool isJubilee = false;
+
+                if (emp.BirthDate.HasValue)
+                {
+                    int age = _year - emp.BirthDate.Value.Year;
+                    if (new DateTime(_year, _month, 1) < emp.BirthDate.Value.AddYears(age)) age--;
+                    isJubilee = (age >= 50 && age % 5 == 0);
+                    ageStr = age + " лет" + (isJubilee ? " 🎂 Юбилей!" : "");
+                }
+
                 int r = _gridEmployees.Rows.Add(
                     emp.Name,
+                    birthStr,
+                    ageStr,
                     emp.Position,
                     emp.Department,
                     emp.Schedule.ToString(),
@@ -676,6 +803,13 @@ namespace ShiftScheduleApp
                     emp.ShiftHours + " ч"
                 );
                 _gridEmployees.Rows[r].Tag = emp;
+
+                if (isJubilee)
+                {
+                    _gridEmployees.Rows[r].Cells["Age"].Style.BackColor = Color.FromArgb(254, 243, 199);
+                    _gridEmployees.Rows[r].Cells["Age"].Style.ForeColor = Color.FromArgb(146, 64, 14);
+                    _gridEmployees.Rows[r].Cells["Age"].Style.Font = new Font(_gridEmployees.Font, FontStyle.Bold);
+                }
             }
         }
 
@@ -708,6 +842,7 @@ namespace ShiftScheduleApp
                 cmb.Items.Add("Внеплановый выходной (ВВ) - отгул");
                 cmb.Items.Add("Оплачиваемый отпуск (ОТ)");
                 cmb.Items.Add("Больничный лист (Б)");
+                cmb.Items.Add("Декретный отпуск (Д) - БиР / уход за ребенком");
                 cmb.SelectedIndex = 0;
 
                 Label lblNote = new Label { Text = "Причина / примечание:", Location = new Point(20, 90), AutoSize = true };
@@ -735,6 +870,7 @@ namespace ShiftScheduleApp
                         case 3: newStatus = ShiftStatus.UnplannedOff; break;
                         case 4: newStatus = ShiftStatus.Vacation; break;
                         case 5: newStatus = ShiftStatus.Sick; break;
+                        case 6: newStatus = ShiftStatus.Maternity; break;
                         default: newStatus = ShiftStatus.Work; break;
                     }
 
@@ -800,6 +936,10 @@ namespace ShiftScheduleApp
             sb.AppendLine("         РАСЧЁТНЫЙ ЛИСТОК ЗА " + RussianMonths[_month - 1].ToUpper() + " " + _year);
             sb.AppendLine("==================================================");
             sb.AppendLine("Сотрудник: " + emp.Name);
+            if (emp.BirthDate.HasValue)
+            {
+                sb.AppendLine("Дата рождения: " + emp.BirthDate.Value.ToString("dd.MM.yyyy") + (pay.IsJubileeThisMonth ? " (🎂 ЮБИЛЕЙ: " + pay.JubileeAge + " ЛЕТ!)" : ""));
+            }
             sb.AppendLine("Должность: " + emp.Position);
             sb.AppendLine("Отдел:     " + emp.Department);
             sb.AppendLine("График:    " + emp.Schedule + " (ставка: " + emp.DailyRate.ToString("N0") + " ₽/день)");
@@ -807,11 +947,23 @@ namespace ShiftScheduleApp
             sb.AppendLine("Отработано смен: " + pay.ActualWorkedShifts + " из " + pay.PlannedShifts + " плановых (" + pay.TotalHours + " часов)");
             sb.AppendLine("Дней на больничном: " + pay.SickDays + " дн.");
             sb.AppendLine("Дней в отпуске:     " + pay.VacationDays + " дн.");
+            if (pay.MaternityDays > 0)
+            {
+                sb.AppendLine("Дней в декрете:     " + pay.MaternityDays + " дн.");
+            }
             sb.AppendLine("--------------------------------------------------");
-            sb.AppendLine("Оклад за смены:   " + pay.BasePay.ToString("N0") + " ₽");
+            sb.AppendLine("Оклад за смены:     " + pay.BasePay.ToString("N0") + " ₽");
             sb.AppendLine("Больничное пособие: " + pay.SickPay.ToString("N0") + " ₽");
             sb.AppendLine("Отпускные выплаты:  " + pay.VacationPay.ToString("N0") + " ₽");
+            if (pay.MaternityPay > 0)
+            {
+                sb.AppendLine("Декретные выплаты:  " + pay.MaternityPay.ToString("N0") + " ₽ (БиР / пособие)");
+            }
             sb.AppendLine("Премия / надбавка:  " + pay.BonusPay.ToString("N0") + " ₽");
+            if (pay.JubileeBonusPay > 0)
+            {
+                sb.AppendLine("🎂 Юбилейная премия: " + pay.JubileeBonusPay.ToString("N0") + " ₽ (к " + pay.JubileeAge + "-летию)");
+            }
             sb.AppendLine("==================================================");
             sb.AppendLine("ИТОГО К ВЫПЛАТЕ:    " + pay.TotalPayout.ToString("N0") + " ₽");
             sb.AppendLine("==================================================");
@@ -819,44 +971,193 @@ namespace ShiftScheduleApp
             MessageBox.Show(sb.ToString(), "Расчётный листок - " + emp.Name, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        private void BtnJubilees_Click(object sender, EventArgs e)
+        {
+            List<JubileeInfo> jubilees = ScheduleEngine.GetJubileesInMonth(_employees, _year, _month);
+
+            using (Form dlg = new Form())
+            {
+                dlg.Text = "🎂 Поздравление юбиляров за " + RussianMonths[_month - 1] + " " + _year + " (начиная с 50 лет)";
+                dlg.Size = new Size(680, 560);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+
+                if (jubilees.Count == 0)
+                {
+                    Label lblEmpty = new Label
+                    {
+                        Text = "В этом месяце (" + RussianMonths[_month - 1] + " " + _year + ") нет юбиляров от 50 лет.\n(Юбилеями считаются круглые даты 50, 55, 60, 65, 70 и более лет).",
+                        Font = new Font("Segoe UI", 11f),
+                        ForeColor = Color.FromArgb(100, 116, 139),
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Dock = DockStyle.Fill
+                    };
+                    dlg.Controls.Add(lblEmpty);
+                    dlg.ShowDialog();
+                    return;
+                }
+
+                int currentIdx = 0;
+
+                Panel pnlTopNav = new Panel { Dock = DockStyle.Top, Height = 45, BackColor = Color.FromArgb(254, 243, 199) };
+                Label lblNav = new Label
+                {
+                    Text = "Юбиляр 1 из " + jubilees.Count,
+                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(146, 64, 14),
+                    Location = new Point(20, 12),
+                    AutoSize = true
+                };
+
+                Button btnPrev = new Button { Text = "◀ Предыдущий", Location = new Point(360, 8), Size = new Size(130, 28) };
+                Button btnNext = new Button { Text = "Следующий ▶", Location = new Point(500, 8), Size = new Size(130, 28) };
+                btnPrev.Enabled = false;
+                btnNext.Enabled = jubilees.Count > 1;
+
+                pnlTopNav.Controls.Add(lblNav);
+                pnlTopNav.Controls.Add(btnPrev);
+                pnlTopNav.Controls.Add(btnNext);
+                dlg.Controls.Add(pnlTopNav);
+
+                // Body elements
+                Label lblEmpName = new Label { Font = new Font("Segoe UI", 13f, FontStyle.Bold), Location = new Point(25, 65), AutoSize = true, ForeColor = Color.FromArgb(15, 23, 42) };
+                Label lblDetails = new Label { Font = new Font("Segoe UI", 9.5f), Location = new Point(25, 95), AutoSize = true, ForeColor = Color.FromArgb(100, 116, 139) };
+
+                Label lblLetterTitle = new Label { Text = "Поздравительный адрес от коллектива и руководства:", Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Location = new Point(25, 128), AutoSize = true };
+                TextBox txtGreeting = new TextBox
+                {
+                    Location = new Point(25, 150),
+                    Size = new Size(615, 220),
+                    Multiline = true,
+                    ReadOnly = true,
+                    ScrollBars = ScrollBars.Vertical,
+                    Font = new Font("Segoe UI", 9.5f),
+                    BackColor = Color.FromArgb(255, 251, 235),
+                    ForeColor = Color.FromArgb(120, 53, 15)
+                };
+
+                Label lblBonus = new Label { Text = "Юбилейная выплата / премия (₽):", Location = new Point(25, 385), AutoSize = true, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+                TextBox txtBonus = new TextBox { Location = new Point(25, 410), Size = new Size(180, 26) };
+
+                Button btnSaveBonus = new Button
+                {
+                    Text = "Сохранить премию",
+                    Location = new Point(215, 408),
+                    Size = new Size(140, 30),
+                    BackColor = Color.FromArgb(37, 99, 235),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat
+                };
+                btnSaveBonus.FlatAppearance.BorderSize = 0;
+
+                Button btnCopy = new Button
+                {
+                    Text = "📋 Скопировать поздравление",
+                    Location = new Point(370, 408),
+                    Size = new Size(270, 30),
+                    BackColor = Color.FromArgb(241, 245, 249),
+                    FlatStyle = FlatStyle.Flat
+                };
+                btnCopy.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
+
+                Action updateView = () =>
+                {
+                    JubileeInfo j = jubilees[currentIdx];
+                    lblNav.Text = "Юбиляр " + (currentIdx + 1) + " из " + jubilees.Count;
+                    lblEmpName.Text = "🎂 " + j.EmployeeName + " — " + j.Age + " лет!";
+                    lblDetails.Text = "Дата рождения: " + j.BirthDate.ToString("dd.MM.yyyy") + "  |  Должность: " + j.Position + " (" + j.Department + ")";
+                    txtGreeting.Text = j.CongratulationText;
+                    txtBonus.Text = j.Bonus.ToString("0");
+                    btnPrev.Enabled = currentIdx > 0;
+                    btnNext.Enabled = currentIdx < jubilees.Count - 1;
+                };
+
+                btnPrev.Click += (s, ev) => { if (currentIdx > 0) { currentIdx--; updateView(); } };
+                btnNext.Click += (s, ev) => { if (currentIdx < jubilees.Count - 1) { currentIdx++; updateView(); } };
+
+                btnSaveBonus.Click += (s, ev) =>
+                {
+                    decimal b;
+                    if (decimal.TryParse(txtBonus.Text, out b) && b >= 0)
+                    {
+                        JubileeInfo j = jubilees[currentIdx];
+                        Employee emp = _employees.FirstOrDefault(e => e.Id == j.EmployeeId);
+                        if (emp != null)
+                        {
+                            emp.JubileeBonus = b;
+                            j.Bonus = b;
+                            RefreshAllViews();
+                            MessageBox.Show("Юбилейная премия для " + emp.Name + " установлена в размере " + b.ToString("N0") + " ₽!", "Сохранено", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                    }
+                };
+
+                btnCopy.Click += (s, ev) =>
+                {
+                    Clipboard.SetText(txtGreeting.Text);
+                    MessageBox.Show("Текст поздравления скопирован в буфер обмена!", "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                };
+
+                Button btnClose = new Button { Text = "Закрыть", DialogResult = DialogResult.OK, Location = new Point(530, 470), Size = new Size(110, 32) };
+
+                dlg.Controls.Add(lblEmpName);
+                dlg.Controls.Add(lblDetails);
+                dlg.Controls.Add(lblLetterTitle);
+                dlg.Controls.Add(txtGreeting);
+                dlg.Controls.Add(lblBonus);
+                dlg.Controls.Add(txtBonus);
+                dlg.Controls.Add(btnSaveBonus);
+                dlg.Controls.Add(btnCopy);
+                dlg.Controls.Add(btnClose);
+
+                updateView();
+                dlg.ShowDialog();
+            }
+        }
+
         private void BtnAddEmployee_Click(object sender, EventArgs e)
         {
             using (Form dlg = new Form())
             {
                 dlg.Text = "Добавить нового сотрудника";
-                dlg.Size = new Size(420, 360);
+                dlg.Size = new Size(420, 420);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
 
                 Label lblName = new Label { Text = "ФИО:", Location = new Point(20, 15), AutoSize = true };
                 TextBox txtName = new TextBox { Location = new Point(20, 35), Size = new Size(360, 24) };
 
-                Label lblPos = new Label { Text = "Должность:", Location = new Point(20, 70), AutoSize = true };
-                TextBox txtPos = new TextBox { Location = new Point(20, 90), Size = new Size(360, 24) };
+                Label lblBirth = new Label { Text = "Дата рождения (ДД.ММ.ГГГГ):", Location = new Point(20, 65), AutoSize = true };
+                DateTimePicker dtpBirth = new DateTimePicker { Location = new Point(20, 85), Size = new Size(360, 24), Format = DateTimePickerFormat.Short, Value = new DateTime(1985, 1, 1) };
 
-                Label lblDept = new Label { Text = "Отдел:", Location = new Point(20, 125), AutoSize = true };
-                ComboBox cmbDept = new ComboBox { Location = new Point(20, 145), Size = new Size(360, 24), DropDownStyle = ComboBoxStyle.DropDownList };
+                Label lblPos = new Label { Text = "Должность:", Location = new Point(20, 115), AutoSize = true };
+                TextBox txtPos = new TextBox { Location = new Point(20, 135), Size = new Size(360, 24) };
+
+                Label lblDept = new Label { Text = "Отдел:", Location = new Point(20, 165), AutoSize = true };
+                ComboBox cmbDept = new ComboBox { Location = new Point(20, 185), Size = new Size(360, 24), DropDownStyle = ComboBoxStyle.DropDownList };
                 cmbDept.Items.Add("Производство");
                 cmbDept.Items.Add("Служба эксплуатации");
                 cmbDept.Items.Add("Финансовый отдел");
                 cmbDept.Items.Add("Логистика");
                 cmbDept.SelectedIndex = 0;
 
-                Label lblRate = new Label { Text = "Дневная ставка (руб./день):", Location = new Point(20, 180), AutoSize = true };
-                TextBox txtRate = new TextBox { Text = "3500", Location = new Point(20, 200), Size = new Size(170, 24) };
+                Label lblRate = new Label { Text = "Дневная ставка (руб./день):", Location = new Point(20, 220), AutoSize = true };
+                TextBox txtRate = new TextBox { Text = "3500", Location = new Point(20, 240), Size = new Size(170, 24) };
 
-                Label lblSched = new Label { Text = "График:", Location = new Point(200, 180), AutoSize = true };
-                ComboBox cmbSched = new ComboBox { Location = new Point(200, 200), Size = new Size(180, 24), DropDownStyle = ComboBoxStyle.DropDownList };
+                Label lblSched = new Label { Text = "График:", Location = new Point(200, 220), AutoSize = true };
+                ComboBox cmbSched = new ComboBox { Location = new Point(200, 240), Size = new Size(180, 24), DropDownStyle = ComboBoxStyle.DropDownList };
                 cmbSched.Items.Add("TwoTwo (2/2)");
                 cmbSched.Items.Add("FiveTwo (5/2)");
                 cmbSched.Items.Add("OneThree (1/3)");
                 cmbSched.Items.Add("ThreeThree (3/3)");
                 cmbSched.SelectedIndex = 0;
 
-                Button btnOk = new Button { Text = "Добавить", DialogResult = DialogResult.OK, Location = new Point(190, 260), Size = new Size(90, 30) };
-                Button btnCancel = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel, Location = new Point(290, 260), Size = new Size(90, 30) };
+                Button btnOk = new Button { Text = "Добавить", DialogResult = DialogResult.OK, Location = new Point(190, 320), Size = new Size(90, 30) };
+                Button btnCancel = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel, Location = new Point(290, 320), Size = new Size(90, 30) };
 
                 dlg.Controls.Add(lblName); dlg.Controls.Add(txtName);
+                dlg.Controls.Add(lblBirth); dlg.Controls.Add(dtpBirth);
                 dlg.Controls.Add(lblPos); dlg.Controls.Add(txtPos);
                 dlg.Controls.Add(lblDept); dlg.Controls.Add(cmbDept);
                 dlg.Controls.Add(lblRate); dlg.Controls.Add(txtRate);
@@ -877,6 +1178,7 @@ namespace ShiftScheduleApp
                     _employees.Add(new Employee
                     {
                         Name = txtName.Text.Trim(),
+                        BirthDate = dtpBirth.Value.Date,
                         Position = txtPos.Text.Trim(),
                         Department = cmbDept.SelectedItem.ToString(),
                         DailyRate = rate > 0 ? rate : 3500,
@@ -894,30 +1196,31 @@ namespace ShiftScheduleApp
         {
             using (Form dlg = new Form())
             {
-                dlg.Text = "Назначить период отпуска или больничного";
-                dlg.Size = new Size(420, 320);
+                dlg.Text = "Назначить период отпуска, больничного или декрета";
+                dlg.Size = new Size(440, 330);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
 
                 Label lblEmp = new Label { Text = "Сотрудник:", Location = new Point(20, 15), AutoSize = true };
-                ComboBox cmbEmp = new ComboBox { Location = new Point(20, 35), Size = new Size(360, 24), DropDownStyle = ComboBoxStyle.DropDownList };
+                ComboBox cmbEmp = new ComboBox { Location = new Point(20, 35), Size = new Size(380, 24), DropDownStyle = ComboBoxStyle.DropDownList };
                 foreach (Employee emp in _employees) cmbEmp.Items.Add(emp.Name);
                 if (cmbEmp.Items.Count > 0) cmbEmp.SelectedIndex = 0;
 
                 Label lblType = new Label { Text = "Тип периода:", Location = new Point(20, 75), AutoSize = true };
-                ComboBox cmbType = new ComboBox { Location = new Point(20, 95), Size = new Size(360, 24), DropDownStyle = ComboBoxStyle.DropDownList };
+                ComboBox cmbType = new ComboBox { Location = new Point(20, 95), Size = new Size(380, 24), DropDownStyle = ComboBoxStyle.DropDownList };
                 cmbType.Items.Add("Оплачиваемый отпуск (ОТ)");
                 cmbType.Items.Add("Больничный лист (Б)");
+                cmbType.Items.Add("Декретный отпуск (Д) - БиР / уход за ребенком");
                 cmbType.SelectedIndex = 0;
 
                 Label lblFrom = new Label { Text = "С числа:", Location = new Point(20, 135), AutoSize = true };
-                NumericUpDown numFrom = new NumericUpDown { Location = new Point(20, 155), Size = new Size(160, 24), Minimum = 1, Maximum = DateTime.DaysInMonth(_year, _month), Value = 1 };
+                NumericUpDown numFrom = new NumericUpDown { Location = new Point(20, 155), Size = new Size(170, 24), Minimum = 1, Maximum = DateTime.DaysInMonth(_year, _month), Value = 1 };
 
-                Label lblTo = new Label { Text = "По число:", Location = new Point(200, 135), AutoSize = true };
-                NumericUpDown numTo = new NumericUpDown { Location = new Point(200, 155), Size = new Size(180, 24), Minimum = 1, Maximum = DateTime.DaysInMonth(_year, _month), Value = 7 };
+                Label lblTo = new Label { Text = "По число:", Location = new Point(210, 135), AutoSize = true };
+                NumericUpDown numTo = new NumericUpDown { Location = new Point(210, 155), Size = new Size(190, 24), Minimum = 1, Maximum = DateTime.DaysInMonth(_year, _month), Value = 7 };
 
-                Button btnOk = new Button { Text = "Применить", DialogResult = DialogResult.OK, Location = new Point(190, 220), Size = new Size(90, 30) };
-                Button btnCancel = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel, Location = new Point(290, 220), Size = new Size(90, 30) };
+                Button btnOk = new Button { Text = "Применить", DialogResult = DialogResult.OK, Location = new Point(200, 225), Size = new Size(95, 30) };
+                Button btnCancel = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel, Location = new Point(305, 225), Size = new Size(95, 30) };
 
                 dlg.Controls.Add(lblEmp); dlg.Controls.Add(cmbEmp);
                 dlg.Controls.Add(lblType); dlg.Controls.Add(cmbType);
@@ -928,7 +1231,12 @@ namespace ShiftScheduleApp
                 if (dlg.ShowDialog() == DialogResult.OK && cmbEmp.SelectedIndex >= 0)
                 {
                     Employee selectedEmp = _employees[cmbEmp.SelectedIndex];
-                    ShiftStatus status = cmbType.SelectedIndex == 0 ? ShiftStatus.Vacation : ShiftStatus.Sick;
+                    ShiftStatus status;
+                    string note;
+                    if (cmbType.SelectedIndex == 0) { status = ShiftStatus.Vacation; note = "Очередной отпуск"; }
+                    else if (cmbType.SelectedIndex == 1) { status = ShiftStatus.Sick; note = "Больничный лист"; }
+                    else { status = ShiftStatus.Maternity; note = "Декретный отпуск"; }
+
                     int start = (int)numFrom.Value;
                     int end = (int)numTo.Value;
                     if (start > end) { int tmp = start; start = end; end = tmp; }
@@ -940,7 +1248,7 @@ namespace ShiftScheduleApp
                         {
                             Status = status,
                             Hours = 0,
-                            Note = status == ShiftStatus.Vacation ? "Отпуск" : "Больничный лист"
+                            Note = note
                         };
                     }
 
@@ -958,15 +1266,20 @@ namespace ShiftScheduleApp
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
                     StringBuilder sb = new StringBuilder();
-                    sb.AppendLine("ФИО сотрудника;Должность;Отдел;Дневная ставка;Отработано смен;Плановых смен;Часов;Оклад;Больничные;Отпускные;Премия;ИТОГО К ВЫПЛАТЕ");
+                    sb.AppendLine("ФИО сотрудника;Дата рождения;Возраст;Должность;Отдел;Дневная ставка;Отработано смен;Плановых смен;Часов;Оклад;Больничные;Отпускные;Декретные;Премия;Юбилейная выплата;ИТОГО К ВЫПЛАТЕ");
 
                     foreach (Employee emp in _employees)
                     {
                         List<DayShiftInfo> shifts = ScheduleEngine.CalculateMonthShifts(emp, _year, _month, _overrides);
                         PayrollResult pay = ScheduleEngine.CalculatePayroll(emp, shifts);
 
-                        sb.AppendLine(string.Format("{0};{1};{2};{3};{4};{5};{6};{7};{8};{9};{10};{11}",
+                        string birthStr = emp.BirthDate.HasValue ? emp.BirthDate.Value.ToString("dd.MM.yyyy") : "";
+                        string ageStr = emp.BirthDate.HasValue ? (_year - emp.BirthDate.Value.Year).ToString() : "";
+
+                        sb.AppendLine(string.Format("{0};{1};{2};{3};{4};{5};{6};{7};{8};{9};{10};{11};{12};{13};{14};{15}",
                             emp.Name,
+                            birthStr,
+                            ageStr,
                             emp.Position,
                             emp.Department,
                             emp.DailyRate,
@@ -976,7 +1289,9 @@ namespace ShiftScheduleApp
                             pay.BasePay,
                             pay.SickPay,
                             pay.VacationPay,
+                            pay.MaternityPay,
                             pay.BonusPay,
+                            pay.JubileeBonusPay,
                             pay.TotalPayout
                         ));
                     }

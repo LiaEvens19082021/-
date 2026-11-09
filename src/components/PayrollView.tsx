@@ -11,6 +11,9 @@ import {
   HeartPulse,
   Sun,
   TrendingUp,
+  Baby,
+  Cake,
+  Gift,
 } from 'lucide-react';
 import { Employee, EmployeeMonthCalculation, DayShiftInfo } from '../types/schedule.ts';
 import { formatCurrency, formatNumber, RUSSIAN_MONTHS } from '../utils/scheduleCalculator.ts';
@@ -67,11 +70,14 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
   const totalBasePay = payrollList.reduce((acc, p) => acc + p.basePay, 0);
   const totalSickPay = payrollList.reduce((acc, p) => acc + p.sickPay, 0);
   const totalVacationPay = payrollList.reduce((acc, p) => acc + p.vacationPay, 0);
+  const totalMaternityPay = payrollList.reduce((acc, p) => acc + (p.maternityPay || 0), 0);
   const totalBonuses = payrollList.reduce((acc, p) => acc + p.monthlyBonus, 0);
+  const totalJubileeBonuses = payrollList.reduce((acc, p) => acc + (p.jubileeBonus || 0), 0);
   const totalPayoutFund = payrollList.reduce((acc, p) => acc + p.totalPayout, 0);
   const totalWorkedShifts = payrollList.reduce((acc, p) => acc + p.actualWorkedDays, 0);
   const totalSickDays = payrollList.reduce((acc, p) => acc + p.sickDays, 0);
   const totalVacationDays = payrollList.reduce((acc, p) => acc + p.vacationDays, 0);
+  const totalMaternityDays = payrollList.reduce((acc, p) => acc + (p.maternityDays || 0), 0);
 
   // Filter & sort
   const filteredList = payrollList.filter((item) => {
@@ -131,85 +137,102 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
   return (
     <div className="space-y-5">
       {/* Financial KPI Cards (Light Theme) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         {/* Total Payroll Fund */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-2xs sm:col-span-2 lg:col-span-1">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-3.5 shadow-2xs sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-blue-900">Итоговый ФОТ</span>
             <div className="p-1.5 rounded-lg bg-blue-600 text-white shadow-2xs">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-blue-950 mt-2 truncate">
+          <div className="text-xl font-extrabold text-blue-950 mt-1.5 truncate">
             {formatCurrency(totalPayoutFund)}
           </div>
           <div className="text-[11px] text-blue-700 mt-1 flex items-center gap-1 font-medium">
             <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-            <span>За {monthName} {year} ({payrollList.length} сотр.)</span>
+            <span>{monthName} {year}</span>
           </div>
         </div>
 
         {/* Base Work Shifts Pay */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500">Оплата смен</span>
             <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
               {totalWorkedShifts} смен
             </span>
           </div>
-          <div className="text-xl font-bold text-slate-900 mt-2 truncate">
+          <div className="text-lg font-bold text-slate-900 mt-1.5 truncate">
             {formatCurrency(totalBasePay)}
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            По ставке каждого сотрудника
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            По дневным ставкам
           </div>
         </div>
 
         {/* Sick Leave Compensations */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500">Больничные</span>
             <div className="p-1 rounded-md bg-rose-50 text-rose-600 border border-rose-200">
               <HeartPulse className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl font-bold text-rose-700 mt-2 truncate">
+          <div className="text-lg font-bold text-rose-700 mt-1.5 truncate">
             {formatCurrency(totalSickPay)}
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            За {totalSickDays} дней нетрудоспособности
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            За {totalSickDays} дн. болезни
           </div>
         </div>
 
         {/* Vacation Compensations */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500">Отпускные</span>
             <div className="p-1 rounded-md bg-teal-50 text-teal-600 border border-teal-200">
               <Sun className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl font-bold text-teal-700 mt-2 truncate">
+          <div className="text-lg font-bold text-teal-700 mt-1.5 truncate">
             {formatCurrency(totalVacationPay)}
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            За {totalVacationDays} дней отпуска
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            За {totalVacationDays} дн. отпуска
           </div>
         </div>
 
-        {/* Bonuses and Extra */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+        {/* Maternity Compensations */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Премии</span>
+            <span className="text-xs font-medium text-slate-500">Декретные (БиР)</span>
+            <div className="p-1 rounded-md bg-purple-50 text-purple-600 border border-purple-200">
+              <Baby className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="text-lg font-bold text-purple-800 mt-1.5 truncate">
+            {formatCurrency(totalMaternityPay)}
+          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            {totalMaternityDays} дн. + пособия
+          </div>
+        </div>
+
+        {/* Bonuses & Jubilee */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500">Премии и Юбилеи</span>
             <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+              <Cake className="w-3 h-3 inline mr-1 text-amber-600" />
               Бонусы
             </span>
           </div>
-          <div className="text-xl font-bold text-slate-900 mt-2 truncate">
-            {formatCurrency(totalBonuses)}
+          <div className="text-lg font-bold text-amber-900 mt-1.5 truncate">
+            {formatCurrency(totalBonuses + totalJubileeBonuses)}
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Индивидуальные надбавки
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            {totalJubileeBonuses > 0 ? `Вкл. юбилеи: ${formatCurrency(totalJubileeBonuses)}` : 'Индивидуальные надбавки'}
           </div>
         </div>
       </div>
@@ -319,7 +342,8 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                 <th className="py-3 px-3 text-right">Оплата смен</th>
                 <th className="py-3 px-3 text-center">Больничный</th>
                 <th className="py-3 px-3 text-center">Отпуск</th>
-                <th className="py-3 px-3 text-right">Премия</th>
+                <th className="py-3 px-3 text-center">Декрет (БиР)</th>
+                <th className="py-3 px-3 text-right">Премия / Юбилей</th>
 
                 <th
                   onClick={() => {
@@ -344,7 +368,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
             <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
               {sortedList.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={10} className="py-12 text-center text-slate-400">
                     Нет сотрудников для отображения
                   </td>
                 </tr>
@@ -367,13 +391,29 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                             {emp.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900 text-xs">{emp.name}</div>
-                            <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-slate-900 text-xs">{emp.name}</span>
+                              {item.isJubileeThisMonth && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-900 font-bold text-[10px] border border-amber-300">
+                                  <Cake className="w-3 h-3 text-amber-600" />
+                                  <span>Юбилей {item.jubileeAge} лет!</span>
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap mt-0.5">
                               <span>{emp.position}</span>
                               <span>•</span>
                               <span className="text-blue-700 font-semibold">{emp.scheduleType}</span>
                               <span>•</span>
                               <span>{emp.department}</span>
+                              {emp.birthDate && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-slate-500">
+                                    {emp.birthDate} ({item.age} л.)
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -474,38 +514,63 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                         )}
                       </td>
 
-                      {/* Bonus */}
-                      <td className="py-3 px-3 text-right">
-                        {isEditingBonus ? (
-                          <div className="flex items-center justify-end gap-1">
-                            <input
-                              type="number"
-                              min="0"
-                              step="500"
-                              value={tempBonus}
-                              onChange={(e) => setTempBonus(Number(e.target.value))}
-                              className="w-20 bg-white border border-blue-500 text-slate-900 text-xs font-bold rounded-lg px-2 py-1 outline-none text-right"
-                              autoFocus
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleSaveBonus(emp.id)}
-                              className="p-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
+                      {/* Maternity Pay (Декрет / БиР) */}
+                      <td className="py-3 px-3 text-center">
+                        {item.maternityDays > 0 ? (
+                          <div className="bg-purple-50/60 p-1 rounded-lg border border-purple-200">
+                            <div className="font-bold text-purple-900 text-xs">
+                              +{formatCurrency(item.maternityPay)}
+                            </div>
+                            <div className="text-[10px] text-purple-700 font-medium">
+                              {item.maternityDays} дн. декрета
+                            </div>
                           </div>
                         ) : (
-                          <div
-                            onClick={() => handleStartEditBonus(emp.id, emp.monthlyBonus)}
-                            className="cursor-pointer hover:text-amber-700 group/bonus text-right"
-                            title="Нажмите, чтобы изменить премию"
-                          >
-                            <span className="font-bold text-amber-800 text-xs">
-                              {item.monthlyBonus > 0 ? formatCurrency(item.monthlyBonus) : '—'}
-                            </span>
-                          </div>
+                          <span className="text-slate-400">-</span>
                         )}
+                      </td>
+
+                      {/* Bonus & Jubilee */}
+                      <td className="py-3 px-3 text-right">
+                        <div className="space-y-1">
+                          {isEditingBonus ? (
+                            <div className="flex items-center justify-end gap-1">
+                              <input
+                                type="number"
+                                min="0"
+                                step="500"
+                                value={tempBonus}
+                                onChange={(e) => setTempBonus(Number(e.target.value))}
+                                className="w-20 bg-white border border-blue-500 text-slate-900 text-xs font-bold rounded-lg px-2 py-1 outline-none text-right"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSaveBonus(emp.id)}
+                                className="p-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => handleStartEditBonus(emp.id, emp.monthlyBonus)}
+                              className="cursor-pointer hover:text-amber-700 group/bonus text-right"
+                              title="Нажмите, чтобы изменить премию"
+                            >
+                              <span className="font-bold text-amber-800 text-xs">
+                                {item.monthlyBonus > 0 ? formatCurrency(item.monthlyBonus) : '—'}
+                              </span>
+                            </div>
+                          )}
+
+                          {item.jubileeBonus > 0 && (
+                            <div className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                              <Cake className="w-3 h-3 text-amber-600" />
+                              <span>+{formatCurrency(item.jubileeBonus)} юбилей</span>
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       {/* TOTAL PAYOUT */}

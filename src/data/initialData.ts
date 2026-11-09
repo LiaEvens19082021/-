@@ -10,9 +10,11 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     shiftHours: 12,
     scheduleType: '2/2',
     cycleStartDate: '2026-11-01',
+    birthDate: '1976-11-15', // Юбилей: 50 лет (15 ноября 2026)!
     sickPayPercentage: 100,
     vacationPayPercentage: 100,
     monthlyBonus: 8000,
+    jubileeBonus: 10000,
     avatarColor: 'from-blue-600 to-indigo-600',
     active: true,
   },
@@ -25,6 +27,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     shiftHours: 12,
     scheduleType: '2/2',
     cycleStartDate: '2026-11-03', // Сдвинутая смена 2/2 (вторая бригада)
+    birthDate: '1994-04-18',
     sickPayPercentage: 80,
     vacationPayPercentage: 100,
     monthlyBonus: 4000,
@@ -40,6 +43,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     shiftHours: 24,
     scheduleType: '1/3', // Сутки через трое
     cycleStartDate: '2026-11-01',
+    birthDate: '1971-08-20',
     sickPayPercentage: 100,
     vacationPayPercentage: 100,
     monthlyBonus: 6000,
@@ -55,6 +59,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     shiftHours: 8,
     scheduleType: '5/2', // Пятидневка
     cycleStartDate: '2026-11-01',
+    birthDate: '1985-02-10',
     sickPayPercentage: 80,
     vacationPayPercentage: 100,
     monthlyBonus: 5000,
@@ -70,9 +75,11 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     shiftHours: 10,
     scheduleType: '3/3',
     cycleStartDate: '2026-11-01',
+    birthDate: '1966-11-28', // Юбилей: 60 лет (28 ноября 2026)!
     sickPayPercentage: 80,
     vacationPayPercentage: 100,
     monthlyBonus: 3000,
+    jubileeBonus: 15000,
     avatarColor: 'from-cyan-600 to-blue-600',
     active: true,
   },
@@ -85,10 +92,29 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     shiftHours: 8,
     scheduleType: '5/2',
     cycleStartDate: '2026-11-01',
+    birthDate: '1996-03-22',
     sickPayPercentage: 100,
     vacationPayPercentage: 100,
     monthlyBonus: 7000,
     avatarColor: 'from-pink-600 to-rose-600',
+    active: true,
+  },
+  {
+    id: 'emp-7',
+    name: 'Соколова Марина Александровна',
+    position: 'Технолог производства',
+    department: 'Производство',
+    dailyRate: 4100,
+    shiftHours: 8,
+    scheduleType: '5/2',
+    cycleStartDate: '2026-11-01',
+    birthDate: '1993-07-14',
+    sickPayPercentage: 100,
+    vacationPayPercentage: 100,
+    maternityPayPercentage: 100,
+    maternityMonthlyAllowance: 18000, // Ежемесячное декретное пособие
+    monthlyBonus: 0,
+    avatarColor: 'from-purple-600 to-indigo-600',
     active: true,
   },
 ];
@@ -142,4 +168,17 @@ export const INITIAL_OVERRIDES: Record<string, ShiftOverride> = {
   'emp-5_2026-11-20': { employeeId: 'emp-5', date: '2026-11-20', status: 'VACATION', note: 'Очередной отпуск' },
   'emp-5_2026-11-21': { employeeId: 'emp-5', date: '2026-11-21', status: 'VACATION', note: 'Очередной отпуск' },
   'emp-5_2026-11-22': { employeeId: 'emp-5', date: '2026-11-22', status: 'VACATION', note: 'Очередной отпуск' },
+
+  // Соколова Марина: Декретный отпуск (отпуск по беременности и родам / по уходу за ребёнком) весь ноябрь
+  ...Array.from({ length: 30 }, (_, i) => {
+    const d = String(i + 1).padStart(2, '0');
+    return {
+      [`emp-7_2026-11-${d}`]: {
+        employeeId: 'emp-7',
+        date: `2026-11-${d}`,
+        status: 'MATERNITY' as const,
+        note: 'Отпуск по беременности и родам (декрет)',
+      },
+    };
+  }).reduce((acc, curr) => ({ ...acc, ...curr }), {}),
 };

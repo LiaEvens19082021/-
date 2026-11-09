@@ -30,6 +30,7 @@ namespace ShiftScheduleApp.Models
         UnplannedWork,  // ВР - Внеплановая смена (выход в выходной)
         Vacation,       // ОТ - Оплачиваемый отпуск
         SickLeave,      // Б  - Больничный лист
+        Maternity,      // Д  - Декретный отпуск (по беременности и родам / уходу)
         Absence         // ПР - Прогул / без оплаты
     }
 
@@ -40,26 +41,38 @@ namespace ShiftScheduleApp.Models
         public string Position { get; set; } = string.Empty;
         public string Department { get; set; } = string.Empty;
 
-        // Дневная ставка за 1 рабочий день (руб.)
-        public decimal DailyRate { get; set; } = 3000m;
+        // Дата рождения сотрудника для вычисления юбилеев (50, 55, 60, 65+ лет)
+        public DateTime? BirthDate { get; set; }
 
-        // Длительность смены в часах (например, 8 или 12)
-        public int ShiftHours { get; set; } = 8;
+        // Дневная ставка за 1 рабочий день (руб.)
+        public decimal DailyRate { get; set; } = 3500m;
+
+        // Длительность смены в часах (например, 8, 10, 12, 24)
+        public int ShiftHours { get; set; } = 12;
 
         // Тип графика (2/2, 5/2, 3/3, 1/3)
-        public ScheduleType Schedule { get; set; } = ScheduleType.FiveTwo;
+        public ScheduleType Schedule { get; set; } = ScheduleType.TwoTwo;
 
         // Дата первой рабочей смены (точка отсчёта цикла)
         public DateTime CycleStartDate { get; set; } = DateTime.Today;
 
-        // Процент оплаты больничного (например, 80% или 100%)
+        // Процент оплаты больничного (например, 80%)
         public decimal SickPayPercentage { get; set; } = 80m;
 
         // Процент оплаты отпуска (обычно 100%)
         public decimal VacationPayPercentage { get; set; } = 100m;
 
+        // Процент оплаты декретного отпуска (100%)
+        public decimal MaternityPayPercentage { get; set; } = 100m;
+
+        // Фиксированное ежемесячное пособие по уходу за ребенком
+        public decimal MaternityMonthlyAllowance { get; set; } = 0m;
+
         // Месячная премия
         public decimal MonthlyBonus { get; set; } = 0m;
+
+        // Премия к юбилею (начиная с 50 лет)
+        public decimal JubileeBonus { get; set; } = 0m;
     }
 
     public class ShiftOverride
@@ -97,14 +110,19 @@ namespace ShiftScheduleApp.Models
         public int UnplannedOffDays { get; set; }
         public int VacationDays { get; set; }
         public int SickDays { get; set; }
+        public int MaternityDays { get; set; }
         public int TotalWorkedHours { get; set; }
 
         public decimal DailyRate { get; set; }
         public decimal BasePay { get; set; }
         public decimal SickPay { get; set; }
         public decimal VacationPay { get; set; }
+        public decimal MaternityPay { get; set; }
         public decimal MonthlyBonus { get; set; }
-        public decimal TotalPayout { get; set; }
+        public decimal JubileeBonus { get; set; }
+        public bool IsJubileeThisMonth { get; set; }
+        public int JubileeAge { get; set; }
+        public decimal TotalPayout => BasePay + SickPay + VacationPay + MaternityPay + MonthlyBonus + JubileeBonus;
     }
 }
 `;
@@ -249,6 +267,9 @@ namespace ShiftScheduleApp.Services
                     case ShiftStatus.SickLeave:
                         result.SickDays++;
                         break;
+                    case ShiftStatus.Maternity:
+                        result.MaternityDays++;
+                        break;
                 }
             }
 
@@ -261,8 +282,20 @@ namespace ShiftScheduleApp.Services
             // Оплата отпускных
             result.VacationPay = Math.Round(result.VacationDays * emp.DailyRate * (emp.VacationPayPercentage / 100m), 2);
 
-            // Итого к выплате
-            result.TotalPayout = result.BasePay + result.SickPay + result.VacationPay + result.MonthlyBonus;
+            // Оплата декретного отпуска (100% от ставки + ежемесячное пособие)
+            result.MaternityPay = Math.Round(result.MaternityDays * emp.DailyRate * (emp.MaternityPayPercentage / 100m), 2) + emp.MaternityMonthlyAllowance;
+
+            // Проверка на юбилей (50, 55, 60, 65+ лет)
+            if (emp.BirthDate.HasValue && emp.BirthDate.Value.Month == month)
+            {
+                int age = year - emp.BirthDate.Value.Year;
+                if (age >= 50 && age % 5 == 0)
+                {
+                    result.IsJubileeThisMonth = true;
+                    result.JubileeAge = age;
+                    result.JubileeBonus = emp.JubileeBonus;
+                }
+            }
 
             return result;
         }
