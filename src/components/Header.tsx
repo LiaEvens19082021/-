@@ -12,7 +12,6 @@ import {
   HeartPulse,
   Sun,
   RotateCcw,
-  Monitor,
 } from 'lucide-react';
 import { RUSSIAN_MONTHS, formatCurrency } from '../utils/scheduleCalculator.ts';
 import { EmployeeMonthCalculation } from '../types/schedule.ts';
@@ -29,7 +28,6 @@ interface HeaderProps {
   onOpenAddEmployee: () => void;
   onOpenBatchPeriod: () => void;
   onOpenBulkSchedule: () => void;
-  onOpenVisualStudioGuide?: () => void;
   onExportCsv: () => void;
   onResetData: () => void;
   selectedDepartment: string;
@@ -49,7 +47,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAddEmployee,
   onOpenBatchPeriod,
   onOpenBulkSchedule,
-  onOpenVisualStudioGuide,
   onExportCsv,
   onResetData,
   selectedDepartment,
@@ -226,18 +223,6 @@ export const Header: React.FC<HeaderProps> = ({
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
               <span>Экспорт в Excel (CSV)</span>
             </button>
-
-            {onOpenVisualStudioGuide && (
-              <button
-                type="button"
-                onClick={onOpenVisualStudioGuide}
-                title="Инструкция по открытию и запуску проекта в Visual Studio"
-                className="flex items-center gap-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg shadow-2xs transition"
-              >
-                <Monitor className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Запуск в Visual Studio</span>
-              </button>
-            )}
 
             <button
               type="button"

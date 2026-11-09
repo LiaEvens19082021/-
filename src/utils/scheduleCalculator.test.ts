@@ -8,7 +8,7 @@ import {
   getDaysInMonth,
   getEmployeeMonthShifts,
 } from './scheduleCalculator.ts';
-import { Employee, ShiftOverride } from '../types/schedule.ts';
+import type { Employee, ShiftOverride } from '../types/schedule.ts';
 
 const mockEmployee2_2: Employee = {
   id: 'emp-1',

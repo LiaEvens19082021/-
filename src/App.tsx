@@ -16,7 +16,6 @@ import { ShiftEditModal } from './components/ShiftEditModal.tsx';
 import { EmployeeModal } from './components/EmployeeModal.tsx';
 import { BatchPeriodModal } from './components/BatchPeriodModal.tsx';
 import { BulkScheduleModal } from './components/BulkScheduleModal.tsx';
-import { VisualStudioModal } from './components/VisualStudioModal.tsx';
 
 const STORAGE_KEYS = {
   EMPLOYEES: 'shift_app_employees_v1',
@@ -93,7 +92,6 @@ export default function App() {
 
   const [isBatchPeriodOpen, setIsBatchPeriodOpen] = useState(false);
   const [isBulkScheduleOpen, setIsBulkScheduleOpen] = useState(false);
-  const [isVisualStudioModalOpen, setIsVisualStudioModalOpen] = useState(false);
 
   // Departments list
   const departments = useMemo(() => {
@@ -317,7 +315,6 @@ export default function App() {
         onOpenAddEmployee={() => setEmployeeModalTarget({ employee: null })}
         onOpenBatchPeriod={() => setIsBatchPeriodOpen(true)}
         onOpenBulkSchedule={() => setIsBulkScheduleOpen(true)}
-        onOpenVisualStudioGuide={() => setIsVisualStudioModalOpen(true)}
         onExportCsv={handleExportCsv}
         onResetData={handleResetData}
         selectedDepartment={selectedDepartment}
@@ -437,10 +434,6 @@ export default function App() {
           onApplyBulkSchedule={handleApplyBulkSchedule}
           onClose={() => setIsBulkScheduleOpen(false)}
         />
-      )}
-
-      {isVisualStudioModalOpen && (
-        <VisualStudioModal onClose={() => setIsVisualStudioModalOpen(false)} />
       )}
     </div>
   );

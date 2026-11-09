@@ -1,40 +1,52 @@
 @echo off
 chcp 65001 > nul
-title График Смен и Расчёт Зарплаты - Запуск проекта
+title График Смен и Расчёт Зарплаты - Запуск БЕЗ Node.js
 echo ======================================================================
 echo           ГРАФИК СМЕН И АВТОМАТИЧЕСКИЙ РАСЧЁТ ЗАРПЛАТЫ
-echo               Запуск проекта для Visual Studio / Windows
+echo               100%% РАБОТАЕТ БЕЗ УСТАНОВКИ NODE.JS!
 echo ======================================================================
 echo.
+echo Выберите вариант запуска:
+echo.
+echo [1] Запустить приложение в Visual Studio (C# 7.3 Windows Desktop)
+echo [2] Запустить напрямую C# приложение (через dotnet run)
+echo [3] Открыть веб-интерфейс в браузере (Автономный HTML - БЕЗ Node.js)
+echo [4] Выход
+echo.
 
-where node >nul 2>nul
-if %ERRORLEVEL% neq 0 (
-    echo [ВНИМАНИЕ] Node.js не найден на вашем компьютере!
+set /p choice="Введите номер (1, 2 или 3): "
+
+if "%choice%"=="1" (
     echo.
-    echo Чтобы проект работал в Visual Studio и локально на Windows:
-    echo 1. Скачайте бесплатный Node.js с официального сайта: https://nodejs.org/
-    echo 2. Установите его (нажимайте "Next" по умолчанию)
-    echo 3. После установки снова запустите этот файл или нажмите F5 в Visual Studio.
+    echo Открытие решения в Visual Studio...
+    start ShiftScheduleApp.sln
     echo.
+    echo Решение открыто! Нажмите клавишу F5 в Visual Studio для запуска.
     pause
-    exit /b 1
+    exit /b 0
 )
 
-echo [1/3] Проверка установленных пакетов...
-if not exist "node_modules\" (
-    echo [2/3] Первая установка библиотек (npm install)... Пожалуйста, подождите...
-    call npm install
+if "%choice%"=="2" (
+    echo.
+    echo Запуск проекта C# Windows Forms...
+    where dotnet >nul 2>nul
     if %ERRORLEVEL% neq 0 (
-        echo [ОШИБКА] Не удалось установить пакеты npm. Проверьте интернет-соединение.
+        echo [ИНФО] Команда dotnet не найдена в PATH.
+        echo Открываем решение в Visual Studio (где встроен компилятор .NET):
+        start ShiftScheduleApp.sln
         pause
-        exit /b 1
+        exit /b 0
     )
-) else (
-    echo [2/3] Библиотеки уже установлены.
+    dotnet run --project csharp\ShiftScheduleCSharp.csproj
+    pause
+    exit /b 0
 )
 
-echo [3/3] Запуск веб-приложения на http://localhost:3000 ...
-start http://localhost:3000
-call npm run dev
+if "%choice%"=="3" (
+    echo.
+    echo Открытие интерфейса в вашем браузере (без серверов и без Node.js)...
+    start standalone_offline.html
+    exit /b 0
+)
 
-pause
+exit /b 0

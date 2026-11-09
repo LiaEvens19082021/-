@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>График Смен и Расчёт Зарплаты (Автономная версия - БЕЗ Node.js)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .status-work { background-color: #dcfce7; color: #166534; }
+    .status-off { background-color: #f8fafc; color: #94a3b8; }
+    .status-unplanned-work { background-color: #e0e7ff; color: #4338ca; font-weight: bold; }
+    .status-unplanned-off { background-color: #fef3c7; color: #b45309; }
+    .status-sick { background-color: #fee2e2; color: #b91c1c; font-weight: bold; }
+    .status-vacation { background-color: #ccfbf1; color: #0f766e; font-weight: bold; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+  <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-4">
+    <!-- Header -->
+    <header class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold text-slate-900">График Смен и Расчёт Зарплаты</h1>
+            <span class="px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-md">Автономно • БЕЗ Node.js</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Графики (2/2, 5/2, 1/3, 3/3), внеплановые смены, отпуска, больничные и авторасчёт зарплаты</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1">
+            <button id="btnPrevMonth" class="px-2 py-1 text-slate-600 hover:text-slate-900 font-bold">◀</button>
+            <span id="lblMonth" class="px-3 text-sm font-bold min-w-[120px] text-center">Ноябрь 2026</span>
+            <button id="btnNextMonth" class="px-2 py-1 text-slate-600 hover:text-slate-900 font-bold">▶</button>
+          </div>
+
+          <select id="cmbDept" class="bg-white border border-slate-200 text-xs rounded-xl px-3 py-2">
+            <option value="ALL">Все отделы (4)</option>
+            <option value="Производство">Производство</option>
+            <option value="Служба эксплуатации">Служба эксплуатации</option>
+            <option value="Финансовый отдел">Финансовый отдел</option>
+            <option value="Логистика">Логистика</option>
+          </select>
+
+          <button id="btnExportCsv" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl transition">
+            Экспорт в Excel (CSV)
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4 pt-4 border-t border-slate-100 text-xs">
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <span class="text-slate-500">Сотрудников:</span>
+          <div id="kpiEmployees" class="text-base font-bold text-slate-900 mt-0.5">6 чел.</div>
+        </div>
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <span class="text-slate-500">Отработано смен:</span>
+          <div id="kpiShifts" class="text-base font-bold text-slate-900 mt-0.5">88 / 95</div>
+        </div>
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <span class="text-slate-500">Больничные:</span>
+          <div id="kpiSick" class="text-base font-bold text-rose-700 mt-0.5">4 дн.</div>
+        </div>
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <span class="text-slate-500">Отпуска:</span>
+          <div id="kpiVacation" class="text-base font-bold text-teal-700 mt-0.5">7 дн.</div>
+        </div>
+        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 col-span-2 sm:col-span-1">
+          <span class="text-emerald-800">Фонд зарплаты (ФОТ):</span>
+          <div id="kpiPayroll" class="text-base font-extrabold text-emerald-800 mt-0.5">427 140 ₽</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="flex items-center gap-2 bg-slate-200/70 p-1 rounded-xl w-fit">
+      <button id="tabBtnMatrix" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-white text-blue-700 shadow-sm">Табель смен</button>
+      <button id="tabBtnPayroll" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900">Расчётная ведомость</button>
+    </div>
+
+    <!-- Matrix View -->
+    <div id="viewMatrix" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
+        <span>💡 Кликните по любой ячейке со сменой, чтобы изменить статус (смена, выходной, отпуск, больничный).</span>
+        <span class="font-medium">Обозначения: Р - работа, В - выходной, ВР - внеплановая, Б - больничный, ОТ - отпуск</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse" id="matrixTable">
+          <!-- Filled by JS -->
+        </table>
+      </div>
+    </div>
+
+    <!-- Payroll View -->
+    <div id="viewPayroll" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hidden">
+      <div class="p-3 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-800">
+        Ведомость начислений: расчёт по количеству смен, дневной ставке, больничным (80%) и отпускным (100%)
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs divide-y divide-slate-200" id="payrollTable">
+          <!-- Filled by JS -->
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MONTH_NAMES = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+    let year = 2026;
+    let month = 11;
+    let currentDept = "ALL";
+
+    let employees = [
+      { id: "emp-1", name: "Иванов Алексей Петрович", pos: "Старший сменный мастер", dept: "Производство", rate: 4500, sched: "2/2", hours: 12, anchor: "2026-11-01", bonus: 5000 },
+      { id: "emp-2", name: "Смирнова Екатерина Михайловна", pos: "Оператор производственной линии", dept: "Производство", rate: 3600, sched: "2/2", hours: 12, anchor: "2026-11-03", bonus: 0 },
+      { id: "emp-3", name: "Кузнецов Дмитрий Сергеевич", pos: "Дежурный инженер КИПиА", dept: "Служба эксплуатации", rate: 5200, sched: "1/3", hours: 24, anchor: "2026-11-01", bonus: 0 },
+      { id: "emp-4", name: "Морозова Анна Владимировна", pos: "Бухгалтер-экономист", dept: "Финансовый отдел", rate: 4200, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 0 },
+      { id: "emp-5", name: "Васильев Роман Андреевич", pos: "Кладовщик-комплектовщик", dept: "Логистика", rate: 3400, sched: "3/3", hours: 10, anchor: "2026-11-01", bonus: 0 },
+      { id: "emp-6", name: "Попова Ольга Николаевна", pos: "Менеджер по отгрузкам", dept: "Логистика", rate: 3800, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 7000 }
+    ];
+
+    let overrides = {
+      "emp-1_2026-11-07": { status: "UNPLANNED_WORK", hours: 12 },
+      "emp-2_2026-11-12": { status: "UNPLANNED_OFF", hours: 0 },
+      "emp-4_2026-11-10": { status: "SICK", hours: 0 },
+      "emp-4_2026-11-11": { status: "SICK", hours: 0 },
+      "emp-4_2026-11-12": { status: "SICK", hours: 0 },
+      "emp-4_2026-11-13": { status: "SICK", hours: 0 },
+      "emp-5_2026-11-16": { status: "VACATION", hours: 0 },
+      "emp-5_2026-11-17": { status: "VACATION", hours: 0 },
+      "emp-5_2026-11-18": { status: "VACATION", hours: 0 },
+      "emp-5_2026-11-19": { status: "VACATION", hours: 0 },
+      "emp-5_2026-11-20": { status: "VACATION", hours: 0 },
+      "emp-5_2026-11-21": { status: "VACATION", hours: 0 },
+      "emp-5_2026-11-22": { status: "VACATION", hours: 0 }
+    };
+
+    function getDaysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+    function getBaseStatus(emp, dateStr) {
+      const dt = new Date(dateStr);
+      const dayOfWeek = dt.getDay(); // 0 Sun, 6 Sat
+      if (emp.sched === "5/2") return (dayOfWeek === 0 || dayOfWeek === 6) ? "OFF" : "WORK";
+      const anchor = new Date(emp.anchor);
+      const diff = Math.round((dt - anchor) / 86400000);
+      if (emp.sched === "2/2") return (((diff % 4) + 4) % 4 < 2) ? "WORK" : "OFF";
+      if (emp.sched === "1/3") return (((diff % 4) + 4) % 4 === 0) ? "WORK" : "OFF";
+      if (emp.sched === "3/3") return (((diff % 6) + 6) % 6 < 3) ? "WORK" : "OFF";
+      return "WORK";
+    }
+
+    function render() {
+      document.getElementById("lblMonth").innerText = MONTH_NAMES[month - 1] + " " + year;
+      const daysCount = getDaysInMonth(year, month);
+      const filtered = employees.filter(e => currentDept === "ALL" || e.dept === currentDept);
+
+      // KPI totals
+      let totalPlan = 0, totalActual = 0, totalSick = 0, totalVac = 0, totalFund = 0;
+
+      // Render Matrix
+      let ths = '<tr class="bg-slate-50 border-b border-slate-200 text-slate-600"><th class="p-2 min-w-[200px]">Сотрудник / График</th>';
+      for (let d = 1; d <= daysCount; d++) {
+        const dt = new Date(year, month - 1, d);
+        const isWk = dt.getDay() === 0 || dt.getDay() === 6;
+        ths += `<th class="p-1 text-center min-w-[32px] ${isWk ? 'bg-rose-50 text-rose-700' : ''}">${d}</th>`;
+      }
+      ths += '<th class="p-2 text-center min-w-[70px]">Смены</th><th class="p-2 text-right min-w-[100px]">К выплате</th></tr>';
+
+      let rows = "";
+      filtered.forEach(emp => {
+        let empPlanned = 0, empActual = 0, empSick = 0, empVac = 0;
+        let rowCells = `<td class="p-2 font-medium border-r border-slate-200"><div>${emp.name}</div><div class="text-[11px] text-slate-500">${emp.sched} • ${emp.rate.toLocaleString('ru')} ₽/дн</div></td>`;
+
+        for (let d = 1; d <= daysCount; d++) {
+          const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const base = getBaseStatus(emp, dateStr);
+          if (base === "WORK") empPlanned++;
+
+          const ov = overrides[`${emp.id}_${dateStr}`];
+          const eff = ov ? ov.status : base;
+
+          if (eff === "WORK" || eff === "UNPLANNED_WORK") empActual++;
+          if (eff === "SICK") empSick++;
+          if (eff === "VACATION") empVac++;
+
+          let badge = "Р", cls = "status-work";
+          if (eff === "OFF") { badge = "В"; cls = "status-off"; }
+          else if (eff === "UNPLANNED_WORK") { badge = "ВР"; cls = "status-unplanned-work"; }
+          else if (eff === "UNPLANNED_OFF") { badge = "ВВ"; cls = "status-unplanned-off"; }
+          else if (eff === "SICK") { badge = "Б"; cls = "status-sick"; }
+          else if (eff === "VACATION") { badge = "ОТ"; cls = "status-vacation"; }
+
+          rowCells += `<td onclick="editCell('${emp.id}', '${dateStr}', '${eff}')" class="p-1 text-center border-r border-slate-200 cursor-pointer hover:ring-2 hover:ring-blue-400 ${cls}">${badge}</td>`;
+        }
+
+        const basePay = empActual * emp.rate;
+        const sickPay = empSick * emp.rate * 0.8;
+        const vacPay = empVac * emp.rate * 1.0;
+        const total = basePay + sickPay + vacPay + emp.bonus;
+
+        totalPlan += empPlanned;
+        totalActual += empActual;
+        totalSick += empSick;
+        totalVac += empVac;
+        totalFund += total;
+
+        rowCells += `<td class="p-2 text-center border-r border-slate-200 font-bold">${empActual}/${empPlanned}</td>`;
+        rowCells += `<td class="p-2 text-right font-extrabold text-emerald-800">${total.toLocaleString('ru')} ₽</td>`;
+        rows += `<tr class="border-b border-slate-200">${rowCells}</tr>`;
+      });
+
+      document.getElementById("matrixTable").innerHTML = `<thead>${ths}</thead><tbody>${rows}</tbody>`;
+
+      // Update KPI
+      document.getElementById("kpiEmployees").innerText = filtered.length + " чел.";
+      document.getElementById("kpiShifts").innerText = totalActual + " / " + totalPlan;
+      document.getElementById("kpiSick").innerText = totalSick + " дн.";
+      document.getElementById("kpiVacation").innerText = totalVac + " дн.";
+      document.getElementById("kpiPayroll").innerText = totalFund.toLocaleString('ru') + " ₽";
+
+      // Render Payroll Table
+      let payThead = `<thead class="bg-slate-50 border-b border-slate-200 text-slate-600"><tr>
+        <th class="p-2.5">ФИО сотрудника</th>
+        <th class="p-2.5">Отдел / Должность</th>
+        <th class="p-2.5">Ставка</th>
+        <th class="p-2.5">Смены</th>
+        <th class="p-2.5">Оклад</th>
+        <th class="p-2.5">Больничные</th>
+        <th class="p-2.5">Отпускные</th>
+        <th class="p-2.5">Премия</th>
+        <th class="p-2.5 text-right font-bold text-slate-900">ИТОГО</th>
+      </tr></thead>`;
+
+      let payRows = "";
+      filtered.forEach(emp => {
+        let empPlanned = 0, empActual = 0, empSick = 0, empVac = 0;
+        for (let d = 1; d <= daysCount; d++) {
+          const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const base = getBaseStatus(emp, dateStr);
+          if (base === "WORK") empPlanned++;
+          const ov = overrides[`${emp.id}_${dateStr}`];
+          const eff = ov ? ov.status : base;
+          if (eff === "WORK" || eff === "UNPLANNED_WORK") empActual++;
+          if (eff === "SICK") empSick++;
+          if (eff === "VACATION") empVac++;
+        }
+
+        const basePay = empActual * emp.rate;
+        const sickPay = empSick * emp.rate * 0.8;
+        const vacPay = empVac * emp.rate * 1.0;
+        const total = basePay + sickPay + vacPay + emp.bonus;
+
+        payRows += `<tr class="border-b border-slate-100 hover:bg-slate-50">
+          <td class="p-2.5 font-bold">${emp.name}</td>
+          <td class="p-2.5 text-slate-500">${emp.dept} (${emp.pos})</td>
+          <td class="p-2.5 cursor-pointer text-blue-600 underline font-semibold" onclick="editRate('${emp.id}')">${emp.rate.toLocaleString('ru')} ₽/дн</td>
+          <td class="p-2.5">${empActual} / ${empPlanned}</td>
+          <td class="p-2.5">${basePay.toLocaleString('ru')} ₽</td>
+          <td class="p-2.5 text-rose-700">${sickPay.toLocaleString('ru')} ₽</td>
+          <td class="p-2.5 text-teal-700">${vacPay.toLocaleString('ru')} ₽</td>
+          <td class="p-2.5">${emp.bonus.toLocaleString('ru')} ₽</td>
+          <td class="p-2.5 text-right font-extrabold text-emerald-800">${total.toLocaleString('ru')} ₽</td>
+        </tr>`;
+      });
+      document.getElementById("payrollTable").innerHTML = payThead + `<tbody>${payRows}</tbody>`;
+    }
+
+    function editCell(empId, dateStr, currentStatus) {
+      const choice = prompt(`Изменение смены на ${dateStr}\nВыберите статус:\n1 - Рабочая смена (Р)\n2 - Выходной (В)\n3 - Внеплановая смена (ВР)\n4 - Внеплановый выходной (ВВ)\n5 - Больничный (Б)\n6 - Отпуск (ОТ)`);
+      if (!choice) return;
+      const statusMap = { "1": "WORK", "2": "OFF", "3": "UNPLANNED_WORK", "4": "UNPLANNED_OFF", "5": "SICK", "6": "VACATION" };
+      if (statusMap[choice]) {
+        overrides[`${empId}_${dateStr}`] = { status: statusMap[choice], hours: (choice === "1" || choice === "3") ? 12 : 0 };
+        render();
+      }
+    }
+
+    function editRate(empId) {
+      const emp = employees.find(e => e.id === empId);
+      if (!emp) return;
+      const newRate = prompt(`Введите новую дневную ставку для ${emp.name} (руб./день):`, emp.rate);
+      if (newRate && !isNaN(newRate) && Number(newRate) > 0) {
+        emp.rate = Number(newRate);
+        render();
+      }
+    }
+
+    // Event listeners
+    document.getElementById("btnPrevMonth").onclick = () => { month--; if (month < 1) { month = 12; year--; } render(); };
+    document.getElementById("btnNextMonth").onclick = () => { month++; if (month > 12) { month = 1; year++; } render(); };
+    document.getElementById("cmbDept").onchange = (e) => { currentDept = e.target.value; render(); };
+
+    document.getElementById("tabBtnMatrix").onclick = () => {
+      document.getElementById("viewMatrix").classList.remove("hidden");
+      document.getElementById("viewPayroll").classList.add("hidden");
+      document.getElementById("tabBtnMatrix").className = "px-4 py-1.5 text-xs font-semibold rounded-lg bg-white text-blue-700 shadow-sm";
+      document.getElementById("tabBtnPayroll").className = "px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900";
+    };
+
+    document.getElementById("tabBtnPayroll").onclick = () => {
+      document.getElementById("viewPayroll").classList.remove("hidden");
+      document.getElementById("viewMatrix").classList.add("hidden");
+      document.getElementById("tabBtnPayroll").className = "px-4 py-1.5 text-xs font-semibold rounded-lg bg-white text-blue-700 shadow-sm";
+      document.getElementById("tabBtnMatrix").className = "px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900";
+    };
+
+    document.getElementById("btnExportCsv").onclick = () => {
+      let csv = "ФИО;Должность;Отдел;Дневная ставка;Отработано смен;Оклад;Больничные;Отпускные;Премия;ИТОГО\\n";
+      const daysCount = getDaysInMonth(year, month);
+      employees.forEach(emp => {
+        let actual = 0, sick = 0, vac = 0;
+        for (let d = 1; d <= daysCount; d++) {
+          const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const eff = (overrides[`${emp.id}_${dateStr}`] || {}).status || getBaseStatus(emp, dateStr);
+          if (eff === "WORK" || eff === "UNPLANNED_WORK") actual++;
+          if (eff === "SICK") sick++;
+          if (eff === "VACATION") vac++;
+        }
+        const total = (actual * emp.rate) + (sick * emp.rate * 0.8) + (vac * emp.rate * 1.0) + emp.bonus;
+        csv += `${emp.name};${emp.pos};${emp.dept};${emp.rate};${actual};${actual * emp.rate};${sick * emp.rate * 0.8};${vac * emp.rate};${emp.bonus};${total}\\n`;
+      });
+      const blob = new Blob(["\\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Ведомость_зарплаты_${MONTH_NAMES[month-1]}_${year}.csv`;
+      a.click();
+    };
+
+    render();
+  </script>
+</body>
+</html>
