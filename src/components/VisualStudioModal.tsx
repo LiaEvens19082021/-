@@ -238,10 +238,10 @@ export const VisualStudioModal: React.FC<VisualStudioModalProps> = ({ onClose })
             <div className="space-y-4">
               <div className="p-3.5 bg-purple-50/70 border border-purple-200 rounded-xl">
                 <span className="font-semibold text-purple-900 block mb-1">
-                  🔷 Нативный проект C# .NET в папке /csharp/
+                  🔷 Нативный проект C# 7.3 / .NET 7.0 в папке /csharp/
                 </span>
                 <p className="text-purple-800">
-                  Включает полный алгоритм расчёта графиков 2/2, 5/2, 1/3, ставок, отпусков, больничных и консольное меню на русском языке.
+                  Специально адаптирован под спецификацию <b>C# 7.3</b> и <b>.NET 7.0</b> (совместим с Visual Studio 2017, 2019, 2022). Включает полный алгоритм графиков (2/2, 5/2, 1/3, 3/3), ставок, отпусков и больничных с консольным русскоязычным интерфейсом.
                 </p>
               </div>
 

@@ -21,7 +21,7 @@
 
 2. **Структура в «Обозревателе решений» (Solution Explorer)**:
    - **`ShiftScheduleApp`** — Веб-приложение с визуальным интерфейсом (React + TypeScript + Tailwind CSS).
-   - **`ShiftScheduleCSharp`** — Нативная программа на C# .NET 8.0 с консольным интерфейсом и полным алгоритмом расчёта смен и зарплаты.
+   - **`ShiftScheduleCSharp`** — Нативная программа на C# 7.3 (.NET 7.0 / .NET Framework) с консольным интерфейсом и полным алгоритмом расчёта смен и зарплаты.
 
 3. **Запуск веб-интерфейса (F5)**:
    - В выпадающем списке проектов выберите **`ShiftScheduleApp`**.
@@ -54,4 +54,4 @@
 - **Операционная система**: Windows 10/11, macOS или Linux.
 - **Node.js**: Версия 18, 20 или 22+ (скачивается с [nodejs.org](https://nodejs.org/)).
 - **Visual Studio**: Visual Studio 2022 (Community / Professional) с установленным компонентом «Разработка Node.js» или Visual Studio Code.
-- Для сборки C# проекта: **.NET SDK 8.0** или 9.0 (входит в стандартную установку Visual Studio 2022).
+- Для сборки C# проекта: **.NET 7.0 / .NET Framework** (версия языка C# 7.3, поддерживается в Visual Studio 2017, 2019, 2022).

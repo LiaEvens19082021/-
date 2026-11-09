@@ -62,7 +62,7 @@ namespace ShiftScheduleCSharp
 
     public class PayrollResult
     {
-        public Employee Employee { get; set; } = null!;
+        public Employee Employee { get; set; }
         public int PlannedShifts { get; set; }
         public int ActualWorkedShifts { get; set; }
         public int UnplannedWorkedShifts { get; set; }
@@ -90,20 +90,20 @@ namespace ShiftScheduleCSharp
 
                 case ScheduleType.TwoTwo:
                     // Цикл 4 дня: 2 раб, 2 вых
-                    var diff2 = (int)(date.Date - emp.AnchorDate.Date).TotalDays;
-                    var mod2 = ((diff2 % 4) + 4) % 4;
+                    int diff2 = (int)(date.Date - emp.AnchorDate.Date).TotalDays;
+                    int mod2 = ((diff2 % 4) + 4) % 4;
                     return (mod2 == 0 || mod2 == 1) ? ShiftStatus.Work : ShiftStatus.Off;
 
                 case ScheduleType.OneThree:
                     // Цикл 4 дня: 1 раб (сутки), 3 вых
-                    var diff1 = (int)(date.Date - emp.AnchorDate.Date).TotalDays;
-                    var mod1 = ((diff1 % 4) + 4) % 4;
+                    int diff1 = (int)(date.Date - emp.AnchorDate.Date).TotalDays;
+                    int mod1 = ((diff1 % 4) + 4) % 4;
                     return mod1 == 0 ? ShiftStatus.Work : ShiftStatus.Off;
 
                 case ScheduleType.ThreeThree:
                     // Цикл 6 дней: 3 раб, 3 вых
-                    var diff3 = (int)(date.Date - emp.AnchorDate.Date).TotalDays;
-                    var mod3 = ((diff3 % 6) + 6) % 6;
+                    int diff3 = (int)(date.Date - emp.AnchorDate.Date).TotalDays;
+                    int mod3 = ((diff3 % 6) + 6) % 6;
                     return mod3 < 3 ? ShiftStatus.Work : ShiftStatus.Off;
 
                 case ScheduleType.SixOne:
@@ -120,16 +120,17 @@ namespace ShiftScheduleCSharp
             int month,
             Dictionary<string, ShiftOverride> overrides)
         {
-            var result = new List<DayShiftInfo>();
+            List<DayShiftInfo> result = new List<DayShiftInfo>();
             int days = DateTime.DaysInMonth(year, month);
 
             for (int day = 1; day <= days; day++)
             {
-                var date = new DateTime(year, month, day);
-                var baseStatus = GetBaseStatus(emp, date);
-                var key = $"{emp.Id}_{date:yyyy-MM-dd}";
+                DateTime date = new DateTime(year, month, day);
+                ShiftStatus baseStatus = GetBaseStatus(emp, date);
+                string key = emp.Id + "_" + date.ToString("yyyy-MM-dd");
 
-                if (overrides.TryGetValue(key, out var ov))
+                ShiftOverride ov;
+                if (overrides.TryGetValue(key, out ov))
                 {
                     result.Add(new DayShiftInfo
                     {
@@ -192,7 +193,7 @@ namespace ShiftScheduleCSharp
 
     internal class Program
     {
-        private static readonly List<Employee> Employees = new()
+        private static readonly List<Employee> Employees = new List<Employee>
         {
             new Employee
             {
@@ -262,7 +263,7 @@ namespace ShiftScheduleCSharp
             }
         };
 
-        private static readonly Dictionary<string, ShiftOverride> Overrides = new()
+        private static readonly Dictionary<string, ShiftOverride> Overrides = new Dictionary<string, ShiftOverride>
         {
             // Внеплановая смена мастера
             ["emp-1_2026-11-07"] = new ShiftOverride { Status = ShiftStatus.UnplannedWork, Hours = 12, Note = "Замена" },
@@ -298,7 +299,12 @@ namespace ShiftScheduleCSharp
                 Console.WriteLine();
                 Console.Write("  Выберите пункт меню (0-7): ");
 
-                var input = Console.ReadLine()?.Trim();
+                string input = Console.ReadLine();
+                if (input != null)
+                {
+                    input = input.Trim();
+                }
+
                 switch (input)
                 {
                     case "1":
@@ -339,8 +345,8 @@ namespace ShiftScheduleCSharp
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("==================================================================================");
-            Console.WriteLine($"   ГРАФИК СМЕН И АВТОМАТИЧЕСКИЙ РАСЧЁТ ЗАРПЛАТЫ (C# .NET / Visual Studio)");
-            Console.WriteLine($"   Расчётный период: {_currentMonth:D2}.{_currentYear} | Сотрудников: {Employees.Count}");
+            Console.WriteLine("   ГРАФИК СМЕН И АВТОМАТИЧЕСКИЙ РАСЧЁТ ЗАРПЛАТЫ (C# 7.3 / .NET 7.0)");
+            Console.WriteLine("   Расчётный период: " + _currentMonth.ToString("D2") + "." + _currentYear + " | Сотрудников: " + Employees.Count);
             Console.WriteLine("==================================================================================");
             Console.ResetColor();
             Console.WriteLine();
@@ -351,7 +357,7 @@ namespace ShiftScheduleCSharp
             Console.Clear();
             PrintHeader();
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($" РАСЧЁТНАЯ ВЕДОМОСТЬ ЗА {_currentMonth:D2}.{_currentYear}:");
+            Console.WriteLine(" РАСЧЁТНАЯ ВЕДОМОСТЬ ЗА " + _currentMonth.ToString("D2") + "." + _currentYear + ":");
             Console.ResetColor();
             Console.WriteLine(new string('-', 100));
             Console.WriteLine("{0,-28} | {1,-6} | {2,-6} | {3,10} | {4,10} | {5,10} | {6,10} | {7,12}",
@@ -361,15 +367,17 @@ namespace ShiftScheduleCSharp
             decimal totalFund = 0;
             int totalShifts = 0;
 
-            foreach (var emp in Employees)
+            foreach (Employee emp in Employees)
             {
-                var shifts = ScheduleEngine.CalculateMonthShifts(emp, _currentYear, _currentMonth, Overrides);
-                var pay = ScheduleEngine.CalculatePayroll(emp, shifts);
+                List<DayShiftInfo> shifts = ScheduleEngine.CalculateMonthShifts(emp, _currentYear, _currentMonth, Overrides);
+                PayrollResult pay = ScheduleEngine.CalculatePayroll(emp, shifts);
                 totalFund += pay.TotalPayout;
                 totalShifts += pay.ActualWorkedShifts;
 
+                string displayName = emp.Name.Length > 28 ? emp.Name.Substring(0, 25) + "..." : emp.Name;
+
                 Console.WriteLine("{0,-28} | {1,2}/{2,-3} | {3,5}ч | {4,9:N0} ₽ | {5,9:N0} ₽ | {6,9:N0} ₽ | {7,9:N0} ₽ | {8,10:N0} ₽",
-                    emp.Name.Length > 28 ? emp.Name[..25] + "..." : emp.Name,
+                    displayName,
                     pay.ActualWorkedShifts,
                     pay.PlannedShifts,
                     pay.TotalHours,
@@ -382,10 +390,31 @@ namespace ShiftScheduleCSharp
 
             Console.WriteLine(new string('=', 100));
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($" ВСЕГО: Отработано {totalShifts} смен. ОБЩИЙ ФОНД ЗАРПЛАТЫ: {totalFund:N0} руб.");
+            Console.WriteLine(" ВСЕГО: Отработано " + totalShifts + " смен. ОБЩИЙ ФОНД ЗАРПЛАТЫ: " + totalFund.ToString("N0") + " руб.");
             Console.ResetColor();
             Console.WriteLine("\n Нажмите Enter, чтобы вернуться в меню...");
             Console.ReadLine();
+        }
+
+        private static string GetShiftStatusCode(ShiftStatus status)
+        {
+            switch (status)
+            {
+                case ShiftStatus.Work:
+                    return " Р ";
+                case ShiftStatus.Off:
+                    return " . ";
+                case ShiftStatus.UnplannedWork:
+                    return "ВР ";
+                case ShiftStatus.UnplannedOff:
+                    return "ВВ ";
+                case ShiftStatus.Sick:
+                    return " Б ";
+                case ShiftStatus.Vacation:
+                    return "ОТ ";
+                default:
+                    return " ? ";
+            }
         }
 
         private static void ShowScheduleMatrix()
@@ -393,7 +422,7 @@ namespace ShiftScheduleCSharp
             Console.Clear();
             PrintHeader();
             Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($" ТАБЕЛЬ СМЕН (1-15 числа месяца {_currentMonth:D2}.{_currentYear}):");
+            Console.WriteLine(" ТАБЕЛЬ СМЕН (1-15 числа месяца " + _currentMonth.ToString("D2") + "." + _currentYear + "):");
             Console.ResetColor();
             Console.WriteLine(new string('-', 90));
             Console.Write("{0,-24} |", "Сотрудник / График");
@@ -404,25 +433,17 @@ namespace ShiftScheduleCSharp
             Console.WriteLine(" | Отраб.");
             Console.WriteLine(new string('-', 90));
 
-            foreach (var emp in Employees)
+            foreach (Employee emp in Employees)
             {
-                var shifts = ScheduleEngine.CalculateMonthShifts(emp, _currentYear, _currentMonth, Overrides);
-                string title = $"{emp.Name.Split(' ')[0]} ({emp.Schedule})";
-                Console.Write("{0,-24} |", title.Length > 24 ? title[..24] : title);
+                List<DayShiftInfo> shifts = ScheduleEngine.CalculateMonthShifts(emp, _currentYear, _currentMonth, Overrides);
+                string title = emp.Name.Split(' ')[0] + " (" + emp.Schedule + ")";
+                string displayTitle = title.Length > 24 ? title.Substring(0, 24) : title;
+                Console.Write("{0,-24} |", displayTitle);
 
                 for (int d = 1; d <= 15; d++)
                 {
-                    var s = shifts[d - 1];
-                    string code = s.EffectiveStatus switch
-                    {
-                        ShiftStatus.Work => " Р ",
-                        ShiftStatus.Off => " . ",
-                        ShiftStatus.UnplannedWork => "ВР ",
-                        ShiftStatus.UnplannedOff => "ВВ ",
-                        ShiftStatus.Sick => " Б ",
-                        ShiftStatus.Vacation => "ОТ ",
-                        _ => " ? "
-                    };
+                    DayShiftInfo s = shifts[d - 1];
+                    string code = GetShiftStatusCode(s.EffectiveStatus);
 
                     if (s.IsOverride)
                     {
@@ -444,8 +465,8 @@ namespace ShiftScheduleCSharp
                     }
                 }
 
-                var pay = ScheduleEngine.CalculatePayroll(emp, shifts);
-                Console.WriteLine($" | {pay.ActualWorkedShifts,2} смен");
+                PayrollResult pay = ScheduleEngine.CalculatePayroll(emp, shifts);
+                Console.WriteLine(" | " + pay.ActualWorkedShifts.ToString().PadLeft(2) + " смен");
             }
 
             Console.WriteLine(new string('-', 90));
@@ -461,18 +482,20 @@ namespace ShiftScheduleCSharp
             Console.WriteLine(" Выберите сотрудника для изменения дневной ставки:");
             for (int i = 0; i < Employees.Count; i++)
             {
-                Console.WriteLine($"  [{i + 1}] {Employees[i].Name} (Текущая ставка: {Employees[i].DailyRate:N0} ₽/день)");
+                Console.WriteLine("  [" + (i + 1) + "] " + Employees[i].Name + " (Текущая ставка: " + Employees[i].DailyRate.ToString("N0") + " ₽/день)");
             }
             Console.Write("\n Номер сотрудника (или 0 для отмены): ");
-            if (int.TryParse(Console.ReadLine(), out int idx) && idx >= 1 && idx <= Employees.Count)
+            int idx;
+            if (int.TryParse(Console.ReadLine(), out idx) && idx >= 1 && idx <= Employees.Count)
             {
-                var emp = Employees[idx - 1];
-                Console.Write($" Введите новую ставку за 1 рабочий день для {emp.Name} (руб.): ");
-                if (decimal.TryParse(Console.ReadLine(), out decimal newRate) && newRate > 0)
+                Employee emp = Employees[idx - 1];
+                Console.Write(" Введите новую ставку за 1 рабочий день для " + emp.Name + " (руб.): ");
+                decimal newRate;
+                if (decimal.TryParse(Console.ReadLine(), out newRate) && newRate > 0)
                 {
                     emp.DailyRate = newRate;
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"\n [УСПЕШНО] Новая ставка установлена: {emp.DailyRate:N0} руб./день.");
+                    Console.WriteLine("\n [УСПЕШНО] Новая ставка установлена: " + emp.DailyRate.ToString("N0") + " руб./день.");
                     Console.WriteLine(" Зарплата за текущий месяц автоматически пересчитана!");
                     Console.ResetColor();
                 }
@@ -488,19 +511,20 @@ namespace ShiftScheduleCSharp
             Console.WriteLine(" Выберите сотрудника для смены графика:");
             for (int i = 0; i < Employees.Count; i++)
             {
-                Console.WriteLine($"  [{i + 1}] {Employees[i].Name} (Текущий график: {Employees[i].Schedule})");
+                Console.WriteLine("  [" + (i + 1) + "] " + Employees[i].Name + " (Текущий график: " + Employees[i].Schedule + ")");
             }
             Console.Write("\n Номер сотрудника: ");
-            if (int.TryParse(Console.ReadLine(), out int idx) && idx >= 1 && idx <= Employees.Count)
+            int idx;
+            if (int.TryParse(Console.ReadLine(), out idx) && idx >= 1 && idx <= Employees.Count)
             {
-                var emp = Employees[idx - 1];
+                Employee emp = Employees[idx - 1];
                 Console.WriteLine("\n Доступные графики:");
                 Console.WriteLine("  [1] 2/2 (2 рабочих, 2 выходных по 12ч)");
                 Console.WriteLine("  [2] 5/2 (пятидневка по 8ч)");
                 Console.WriteLine("  [3] 1/3 (сутки через трое по 24ч)");
                 Console.WriteLine("  [4] 3/3 (3 рабочих, 3 выходных по 10ч)");
                 Console.Write(" Выберите график: ");
-                var choice = Console.ReadLine();
+                string choice = Console.ReadLine();
                 switch (choice)
                 {
                     case "1":
@@ -521,7 +545,7 @@ namespace ShiftScheduleCSharp
                         break;
                 }
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"\n [УСПЕШНО] Сотруднику {emp.Name} назначен график {emp.Schedule} ({emp.ShiftHours}ч).");
+                Console.WriteLine("\n [УСПЕШНО] Сотруднику " + emp.Name + " назначен график " + emp.Schedule + " (" + emp.ShiftHours + "ч).");
                 Console.ResetColor();
             }
             Console.WriteLine("\n Нажмите Enter...");
@@ -535,21 +559,23 @@ namespace ShiftScheduleCSharp
             Console.WriteLine(" Добавление внеплановой смены или внепланового выходного:");
             for (int i = 0; i < Employees.Count; i++)
             {
-                Console.WriteLine($"  [{i + 1}] {Employees[i].Name}");
+                Console.WriteLine("  [" + (i + 1) + "] " + Employees[i].Name);
             }
             Console.Write(" Номер сотрудника: ");
-            if (int.TryParse(Console.ReadLine(), out int idx) && idx >= 1 && idx <= Employees.Count)
+            int idx;
+            if (int.TryParse(Console.ReadLine(), out idx) && idx >= 1 && idx <= Employees.Count)
             {
-                var emp = Employees[idx - 1];
-                Console.Write($" Введите число месяца (1-{DateTime.DaysInMonth(_currentYear, _currentMonth)}): ");
-                if (int.TryParse(Console.ReadLine(), out int day) && day >= 1 && day <= 30)
+                Employee emp = Employees[idx - 1];
+                Console.Write(" Введите число месяца (1-" + DateTime.DaysInMonth(_currentYear, _currentMonth) + "): ");
+                int day;
+                if (int.TryParse(Console.ReadLine(), out day) && day >= 1 && day <= 30)
                 {
                     Console.WriteLine(" Выберите тип переопределения:");
                     Console.WriteLine("  [1] Внеплановая рабочая смена (ВР) - переработка / выход на замену");
                     Console.WriteLine("  [2] Внеплановый выходной (ВВ) - отгул / по согласованию");
                     Console.Write(" Выбор: ");
-                    var type = Console.ReadLine();
-                    var key = $"{emp.Id}_{_currentYear:D4}-{_currentMonth:D2}-{day:D2}";
+                    string type = Console.ReadLine();
+                    string key = emp.Id + "_" + _currentYear.ToString("D4") + "-" + _currentMonth.ToString("D2") + "-" + day.ToString("D2");
 
                     if (type == "1")
                     {
@@ -560,7 +586,7 @@ namespace ShiftScheduleCSharp
                             Note = "Внеплановый выход на смену"
                         };
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"\n [УСПЕШНО] {day}.{_currentMonth}.{_currentYear} назначена внеплановая смена!");
+                        Console.WriteLine("\n [УСПЕШНО] " + day + "." + _currentMonth + "." + _currentYear + " назначена внеплановая смена!");
                         Console.ResetColor();
                     }
                     else if (type == "2")
@@ -572,7 +598,7 @@ namespace ShiftScheduleCSharp
                             Note = "Внеплановый выходной"
                         };
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"\n [УСПЕШНО] {day}.{_currentMonth}.{_currentYear} назначен внеплановый выходной!");
+                        Console.WriteLine("\n [УСПЕШНО] " + day + "." + _currentMonth + "." + _currentYear + " назначен внеплановый выходной!");
                         Console.ResetColor();
                     }
                 }
@@ -588,28 +614,31 @@ namespace ShiftScheduleCSharp
             Console.WriteLine(" Оформление отпуска или больничного:");
             for (int i = 0; i < Employees.Count; i++)
             {
-                Console.WriteLine($"  [{i + 1}] {Employees[i].Name}");
+                Console.WriteLine("  [" + (i + 1) + "] " + Employees[i].Name);
             }
             Console.Write(" Номер сотрудника: ");
-            if (int.TryParse(Console.ReadLine(), out int idx) && idx >= 1 && idx <= Employees.Count)
+            int idx;
+            if (int.TryParse(Console.ReadLine(), out idx) && idx >= 1 && idx <= Employees.Count)
             {
-                var emp = Employees[idx - 1];
+                Employee emp = Employees[idx - 1];
                 Console.WriteLine(" Выберите тип:");
                 Console.WriteLine("  [1] Больничный лист (компенсация 80%)");
                 Console.WriteLine("  [2] Ежегодный оплачиваемый отпуск (компенсация 100%)");
-                var typeChoice = Console.ReadLine();
-                var status = typeChoice == "1" ? ShiftStatus.Sick : ShiftStatus.Vacation;
+                string typeChoice = Console.ReadLine();
+                ShiftStatus status = typeChoice == "1" ? ShiftStatus.Sick : ShiftStatus.Vacation;
 
                 Console.Write(" Начальный день (число): ");
-                int.TryParse(Console.ReadLine(), out int startDay);
+                int startDay;
+                int.TryParse(Console.ReadLine(), out startDay);
                 Console.Write(" Конечный день (число): ");
-                int.TryParse(Console.ReadLine(), out int endDay);
+                int endDay;
+                int.TryParse(Console.ReadLine(), out endDay);
 
                 if (startDay >= 1 && endDay >= startDay && endDay <= 30)
                 {
                     for (int d = startDay; d <= endDay; d++)
                     {
-                        var key = $"{emp.Id}_{_currentYear:D4}-{_currentMonth:D2}-{d:D2}";
+                        string key = emp.Id + "_" + _currentYear.ToString("D4") + "-" + _currentMonth.ToString("D2") + "-" + d.ToString("D2");
                         Overrides[key] = new ShiftOverride
                         {
                             Status = status,
@@ -619,7 +648,7 @@ namespace ShiftScheduleCSharp
                     }
 
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"\n [УСПЕШНО] Период с {startDay} по {endDay} ноября оформлен как {(status == ShiftStatus.Sick ? "больничный" : "отпуск")}!");
+                    Console.WriteLine("\n [УСПЕШНО] Период с " + startDay + " по " + endDay + " ноября оформлен как " + (status == ShiftStatus.Sick ? "больничный" : "отпуск") + "!");
                     Console.ResetColor();
                 }
             }
@@ -643,7 +672,7 @@ namespace ShiftScheduleCSharp
             }
             catch (Exception ex)
             {
-                Console.WriteLine($" Не удалось открыть браузер автоматически: {ex.Message}");
+                Console.WriteLine(" Не удалось открыть браузер автоматически: " + ex.Message);
                 Console.WriteLine(" Откройте вручную ссылку: http://localhost:3000");
             }
             Console.WriteLine("\n Нажмите Enter...");
