@@ -11,6 +11,7 @@ import {
   Sparkles,
   User,
   X,
+  Phone,
 } from 'lucide-react';
 import { Employee, JubileeCelebration } from '../types/schedule.ts';
 import { formatCurrency, getJubileeGreeting, RUSSIAN_MONTHS } from '../utils/scheduleCalculator.ts';
@@ -185,6 +186,18 @@ export const JubileeCelebrationModal: React.FC<JubileeCelebrationModalProps> = (
                             День рождения: {activeJubilee.dayOfMonth} {RUSSIAN_MONTHS[month - 1]} ({activeJubilee.birthDate})
                           </span>
                         </p>
+                        {activeJubilee.phone && (
+                          <p className="text-xs text-slate-700 font-medium mt-1 flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Телефон:</span>
+                            <a
+                              href={`tel:${activeJubilee.phone}`}
+                              className="text-blue-700 font-bold hover:underline"
+                            >
+                              {activeJubilee.phone}
+                            </a>
+                          </p>
+                        )}
                       </div>
                     </div>
 

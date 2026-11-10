@@ -60,6 +60,7 @@ namespace ShiftScheduleApp
                     Name = "Иванов Алексей Петрович",
                     Position = "Старший сменный мастер",
                     Department = "Производство",
+                    Phone = "+7 (921) 450-12-34",
                     DailyRate = 4500,
                     Schedule = ScheduleType.TwoTwo,
                     ShiftHours = 12,
@@ -74,6 +75,7 @@ namespace ShiftScheduleApp
                     Name = "Смирнова Екатерина Михайловна",
                     Position = "Оператор производственной линии",
                     Department = "Производство",
+                    Phone = "+7 (911) 345-67-89",
                     DailyRate = 3600,
                     Schedule = ScheduleType.TwoTwo,
                     ShiftHours = 12,
@@ -86,6 +88,7 @@ namespace ShiftScheduleApp
                     Name = "Кузнецов Дмитрий Сергеевич",
                     Position = "Дежурный инженер КИПиА",
                     Department = "Служба эксплуатации",
+                    Phone = "+7 (905) 789-01-23",
                     DailyRate = 5200,
                     Schedule = ScheduleType.OneThree,
                     ShiftHours = 24,
@@ -98,6 +101,7 @@ namespace ShiftScheduleApp
                     Name = "Морозова Анна Владимировна",
                     Position = "Бухгалтер-экономист",
                     Department = "Финансовый отдел",
+                    Phone = "+7 (916) 234-56-78",
                     DailyRate = 4200,
                     Schedule = ScheduleType.FiveTwo,
                     ShiftHours = 8,
@@ -109,6 +113,7 @@ namespace ShiftScheduleApp
                     Name = "Васильев Роман Андреевич",
                     Position = "Кладовщик-комплектовщик",
                     Department = "Логистика",
+                    Phone = "+7 (926) 890-12-34",
                     DailyRate = 3400,
                     Schedule = ScheduleType.ThreeThree,
                     ShiftHours = 10,
@@ -122,6 +127,7 @@ namespace ShiftScheduleApp
                     Name = "Попова Ольга Николаевна",
                     Position = "Менеджер по отгрузкам",
                     Department = "Логистика",
+                    Phone = "+7 (903) 567-89-01",
                     DailyRate = 3800,
                     Schedule = ScheduleType.FiveTwo,
                     ShiftHours = 8,
@@ -134,6 +140,7 @@ namespace ShiftScheduleApp
                     Name = "Соколова Марина Александровна",
                     Position = "Специалист по кадрам",
                     Department = "Финансовый отдел",
+                    Phone = "+7 (912) 678-90-12",
                     DailyRate = 3900,
                     Schedule = ScheduleType.FiveTwo,
                     ShiftHours = 8,
@@ -286,8 +293,8 @@ namespace ShiftScheduleApp
             Button btnAddEmp = new Button
             {
                 Text = "+ Сотрудник",
-                Location = new Point(1250, 11),
-                Size = new Size(120, 30),
+                Location = new Point(1125, 11),
+                Size = new Size(110, 30),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -295,6 +302,19 @@ namespace ShiftScheduleApp
             };
             btnAddEmp.FlatAppearance.BorderSize = 0;
             btnAddEmp.Click += BtnAddEmployee_Click;
+
+            Button btnDeleteEmp = new Button
+            {
+                Text = "Удалить",
+                Location = new Point(1245, 11),
+                Size = new Size(100, 30),
+                BackColor = Color.FromArgb(254, 242, 242),
+                ForeColor = Color.FromArgb(220, 38, 38),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnDeleteEmp.FlatAppearance.BorderColor = Color.FromArgb(254, 202, 202);
+            btnDeleteEmp.Click += BtnDeleteEmployee_Click;
 
             // KPI Strip
             Panel pnlKpi = new Panel
@@ -322,6 +342,7 @@ namespace ShiftScheduleApp
             pnlHeader.Controls.Add(_cmbDept);
             pnlHeader.Controls.Add(_btnJubileesHeader);
             pnlHeader.Controls.Add(btnAddEmp);
+            pnlHeader.Controls.Add(btnDeleteEmp);
             pnlHeader.Controls.Add(pnlKpi);
 
             this.Controls.Add(pnlHeader);
@@ -499,6 +520,43 @@ namespace ShiftScheduleApp
 
         private void SetupEmployeesTab()
         {
+            Panel pnlEmpTop = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 44,
+                BackColor = Color.FromArgb(248, 250, 252),
+                Padding = new Padding(10, 6, 10, 6)
+            };
+
+            Button btnAdd = new Button
+            {
+                Text = "+ Добавить сотрудника",
+                Location = new Point(10, 7),
+                Size = new Size(170, 30),
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnAdd.FlatAppearance.BorderSize = 0;
+            btnAdd.Click += BtnAddEmployee_Click;
+
+            Button btnDelete = new Button
+            {
+                Text = "🗑 Удалить сотрудника",
+                Location = new Point(190, 7),
+                Size = new Size(170, 30),
+                BackColor = Color.FromArgb(254, 242, 242),
+                ForeColor = Color.FromArgb(220, 38, 38),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnDelete.FlatAppearance.BorderColor = Color.FromArgb(254, 202, 202);
+            btnDelete.Click += BtnDeleteEmployee_Click;
+
+            pnlEmpTop.Controls.Add(btnAdd);
+            pnlEmpTop.Controls.Add(btnDelete);
+
             _gridEmployees = new DataGridView
             {
                 Dock = DockStyle.Fill,
@@ -512,7 +570,9 @@ namespace ShiftScheduleApp
                 ColumnHeadersHeight = 36,
                 RowTemplate = { Height = 34 }
             };
+
             _tabEmployees.Controls.Add(_gridEmployees);
+            _tabEmployees.Controls.Add(pnlEmpTop);
         }
 
         private void RefreshAllViews()
@@ -762,15 +822,17 @@ namespace ShiftScheduleApp
             _gridEmployees.Rows.Clear();
 
             _gridEmployees.Columns.Add("Name", "ФИО");
-            _gridEmployees.Columns["Name"].Width = 240;
+            _gridEmployees.Columns["Name"].Width = 220;
+            _gridEmployees.Columns.Add("Phone", "Телефон");
+            _gridEmployees.Columns["Phone"].Width = 140;
             _gridEmployees.Columns.Add("BirthDate", "Дата рождения");
             _gridEmployees.Columns["BirthDate"].Width = 120;
             _gridEmployees.Columns.Add("Age", "Возраст / Юбилей");
             _gridEmployees.Columns["Age"].Width = 140;
             _gridEmployees.Columns.Add("Position", "Должность");
-            _gridEmployees.Columns["Position"].Width = 200;
+            _gridEmployees.Columns["Position"].Width = 180;
             _gridEmployees.Columns.Add("Dept", "Отдел");
-            _gridEmployees.Columns["Dept"].Width = 150;
+            _gridEmployees.Columns["Dept"].Width = 140;
             _gridEmployees.Columns.Add("Schedule", "График");
             _gridEmployees.Columns["Schedule"].Width = 110;
             _gridEmployees.Columns.Add("Rate", "Дневная ставка");
@@ -794,6 +856,7 @@ namespace ShiftScheduleApp
 
                 int r = _gridEmployees.Rows.Add(
                     emp.Name,
+                    emp.Phone ?? "",
                     birthStr,
                     ageStr,
                     emp.Position,
@@ -936,6 +999,10 @@ namespace ShiftScheduleApp
             sb.AppendLine("         РАСЧЁТНЫЙ ЛИСТОК ЗА " + RussianMonths[_month - 1].ToUpper() + " " + _year);
             sb.AppendLine("==================================================");
             sb.AppendLine("Сотрудник: " + emp.Name);
+            if (!string.IsNullOrEmpty(emp.Phone))
+            {
+                sb.AppendLine("Телефон:   " + emp.Phone);
+            }
             if (emp.BirthDate.HasValue)
             {
                 sb.AppendLine("Дата рождения: " + emp.BirthDate.Value.ToString("dd.MM.yyyy") + (pay.IsJubileeThisMonth ? " (🎂 ЮБИЛЕЙ: " + pay.JubileeAge + " ЛЕТ!)" : ""));
@@ -1121,7 +1188,7 @@ namespace ShiftScheduleApp
             using (Form dlg = new Form())
             {
                 dlg.Text = "Добавить нового сотрудника";
-                dlg.Size = new Size(420, 420);
+                dlg.Size = new Size(420, 480);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
 
@@ -1131,33 +1198,37 @@ namespace ShiftScheduleApp
                 Label lblBirth = new Label { Text = "Дата рождения (ДД.ММ.ГГГГ):", Location = new Point(20, 65), AutoSize = true };
                 DateTimePicker dtpBirth = new DateTimePicker { Location = new Point(20, 85), Size = new Size(360, 24), Format = DateTimePickerFormat.Short, Value = new DateTime(1985, 1, 1) };
 
-                Label lblPos = new Label { Text = "Должность:", Location = new Point(20, 115), AutoSize = true };
-                TextBox txtPos = new TextBox { Location = new Point(20, 135), Size = new Size(360, 24) };
+                Label lblPhone = new Label { Text = "Номер телефона (+7 ...):", Location = new Point(20, 115), AutoSize = true };
+                TextBox txtPhone = new TextBox { Location = new Point(20, 135), Size = new Size(360, 24), Text = "+7 " };
 
-                Label lblDept = new Label { Text = "Отдел:", Location = new Point(20, 165), AutoSize = true };
-                ComboBox cmbDept = new ComboBox { Location = new Point(20, 185), Size = new Size(360, 24), DropDownStyle = ComboBoxStyle.DropDownList };
+                Label lblPos = new Label { Text = "Должность:", Location = new Point(20, 165), AutoSize = true };
+                TextBox txtPos = new TextBox { Location = new Point(20, 185), Size = new Size(360, 24) };
+
+                Label lblDept = new Label { Text = "Отдел:", Location = new Point(20, 215), AutoSize = true };
+                ComboBox cmbDept = new ComboBox { Location = new Point(20, 235), Size = new Size(360, 24), DropDownStyle = ComboBoxStyle.DropDownList };
                 cmbDept.Items.Add("Производство");
                 cmbDept.Items.Add("Служба эксплуатации");
                 cmbDept.Items.Add("Финансовый отдел");
                 cmbDept.Items.Add("Логистика");
                 cmbDept.SelectedIndex = 0;
 
-                Label lblRate = new Label { Text = "Дневная ставка (руб./день):", Location = new Point(20, 220), AutoSize = true };
-                TextBox txtRate = new TextBox { Text = "3500", Location = new Point(20, 240), Size = new Size(170, 24) };
+                Label lblRate = new Label { Text = "Дневная ставка (руб./день):", Location = new Point(20, 270), AutoSize = true };
+                TextBox txtRate = new TextBox { Text = "3500", Location = new Point(20, 290), Size = new Size(170, 24) };
 
-                Label lblSched = new Label { Text = "График:", Location = new Point(200, 220), AutoSize = true };
-                ComboBox cmbSched = new ComboBox { Location = new Point(200, 240), Size = new Size(180, 24), DropDownStyle = ComboBoxStyle.DropDownList };
+                Label lblSched = new Label { Text = "График:", Location = new Point(200, 270), AutoSize = true };
+                ComboBox cmbSched = new ComboBox { Location = new Point(200, 290), Size = new Size(180, 24), DropDownStyle = ComboBoxStyle.DropDownList };
                 cmbSched.Items.Add("TwoTwo (2/2)");
                 cmbSched.Items.Add("FiveTwo (5/2)");
                 cmbSched.Items.Add("OneThree (1/3)");
                 cmbSched.Items.Add("ThreeThree (3/3)");
                 cmbSched.SelectedIndex = 0;
 
-                Button btnOk = new Button { Text = "Добавить", DialogResult = DialogResult.OK, Location = new Point(190, 320), Size = new Size(90, 30) };
-                Button btnCancel = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel, Location = new Point(290, 320), Size = new Size(90, 30) };
+                Button btnOk = new Button { Text = "Добавить", DialogResult = DialogResult.OK, Location = new Point(190, 380), Size = new Size(90, 30) };
+                Button btnCancel = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel, Location = new Point(290, 380), Size = new Size(90, 30) };
 
                 dlg.Controls.Add(lblName); dlg.Controls.Add(txtName);
                 dlg.Controls.Add(lblBirth); dlg.Controls.Add(dtpBirth);
+                dlg.Controls.Add(lblPhone); dlg.Controls.Add(txtPhone);
                 dlg.Controls.Add(lblPos); dlg.Controls.Add(txtPos);
                 dlg.Controls.Add(lblDept); dlg.Controls.Add(cmbDept);
                 dlg.Controls.Add(lblRate); dlg.Controls.Add(txtRate);
@@ -1178,6 +1249,7 @@ namespace ShiftScheduleApp
                     _employees.Add(new Employee
                     {
                         Name = txtName.Text.Trim(),
+                        Phone = txtPhone.Text.Trim(),
                         BirthDate = dtpBirth.Value.Date,
                         Position = txtPos.Text.Trim(),
                         Department = cmbDept.SelectedItem.ToString(),
@@ -1188,6 +1260,113 @@ namespace ShiftScheduleApp
                     });
 
                     RefreshAllViews();
+                }
+            }
+        }
+
+        private void BtnDeleteEmployee_Click(object sender, EventArgs e)
+        {
+            if (_employees.Count == 0)
+            {
+                MessageBox.Show("Список сотрудников пуст.", "Удаление", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Propose selected employee if one is selected in _gridEmployees
+            Employee preselected = null;
+            if (_gridEmployees != null && _gridEmployees.SelectedRows.Count > 0 && _gridEmployees.SelectedRows[0].Index < _employees.Count)
+            {
+                preselected = _employees[_gridEmployees.SelectedRows[0].Index];
+            }
+
+            using (Form dlg = new Form())
+            {
+                dlg.Text = "Удалить сотрудника";
+                dlg.Size = new Size(420, 220);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+
+                Label lblPrompt = new Label
+                {
+                    Text = "Выберите сотрудника для удаления:",
+                    Location = new Point(20, 15),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+                };
+
+                ComboBox cmbEmp = new ComboBox
+                {
+                    Location = new Point(20, 42),
+                    Size = new Size(360, 26),
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Font = new Font("Segoe UI", 9.5f)
+                };
+
+                int defaultIndex = 0;
+                for (int i = 0; i < _employees.Count; i++)
+                {
+                    Employee emp = _employees[i];
+                    cmbEmp.Items.Add(emp.Name + " (" + emp.Position + ", " + emp.Department + ")");
+                    if (preselected != null && emp.Id == preselected.Id)
+                    {
+                        defaultIndex = i;
+                    }
+                }
+                cmbEmp.SelectedIndex = defaultIndex;
+
+                Button btnDelete = new Button
+                {
+                    Text = "Удалить",
+                    DialogResult = DialogResult.OK,
+                    Location = new Point(175, 120),
+                    Size = new Size(95, 32),
+                    BackColor = Color.FromArgb(220, 38, 38),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+                };
+                btnDelete.FlatAppearance.BorderSize = 0;
+
+                Button btnCancel = new Button
+                {
+                    Text = "Отмена",
+                    DialogResult = DialogResult.Cancel,
+                    Location = new Point(285, 120),
+                    Size = new Size(95, 32)
+                };
+
+                dlg.Controls.Add(lblPrompt);
+                dlg.Controls.Add(cmbEmp);
+                dlg.Controls.Add(btnDelete);
+                dlg.Controls.Add(btnCancel);
+
+                if (dlg.ShowDialog() == DialogResult.OK && cmbEmp.SelectedIndex >= 0)
+                {
+                    Employee target = _employees[cmbEmp.SelectedIndex];
+                    DialogResult confirm = MessageBox.Show(
+                        "Вы действительно хотите удалить сотрудника \"" + target.Name + "\"?\nВсе связанные с ним смены и расчёты будут безвозвратно удалены.",
+                        "Подтверждение удаления",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning
+                    );
+
+                    if (confirm == DialogResult.Yes)
+                    {
+                        // Remove overrides for this employee
+                        List<string> keysToRemove = _overrides.Keys
+                            .Where(k => k.StartsWith(target.Id + "_"))
+                            .ToList();
+                        foreach (string key in keysToRemove)
+                        {
+                            _overrides.Remove(key);
+                        }
+
+                        _employees.Remove(target);
+                        RefreshAllViews();
+                        MessageBox.Show("Сотрудник \"" + target.Name + "\" успешно удален.", "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
                 }
             }
         }
@@ -1266,7 +1445,7 @@ namespace ShiftScheduleApp
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
                     StringBuilder sb = new StringBuilder();
-                    sb.AppendLine("ФИО сотрудника;Дата рождения;Возраст;Должность;Отдел;Дневная ставка;Отработано смен;Плановых смен;Часов;Оклад;Больничные;Отпускные;Декретные;Премия;Юбилейная выплата;ИТОГО К ВЫПЛАТЕ");
+                    sb.AppendLine("ФИО сотрудника;Телефон;Дата рождения;Возраст;Должность;Отдел;Дневная ставка;Отработано смен;Плановых смен;Часов;Оклад;Больничные;Отпускные;Декретные;Премия;Юбилейная выплата;ИТОГО К ВЫПЛАТЕ");
 
                     foreach (Employee emp in _employees)
                     {
@@ -1276,8 +1455,9 @@ namespace ShiftScheduleApp
                         string birthStr = emp.BirthDate.HasValue ? emp.BirthDate.Value.ToString("dd.MM.yyyy") : "";
                         string ageStr = emp.BirthDate.HasValue ? (_year - emp.BirthDate.Value.Year).ToString() : "";
 
-                        sb.AppendLine(string.Format("{0};{1};{2};{3};{4};{5};{6};{7};{8};{9};{10};{11};{12};{13};{14};{15}",
+                        sb.AppendLine(string.Format("{0};{1};{2};{3};{4};{5};{6};{7};{8};{9};{10};{11};{12};{13};{14};{15};{16}",
                             emp.Name,
+                            emp.Phone ?? "",
                             birthStr,
                             ageStr,
                             emp.Position,

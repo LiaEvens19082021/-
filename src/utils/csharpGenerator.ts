@@ -40,6 +40,7 @@ namespace ShiftScheduleApp.Models
         public string FullName { get; set; } = string.Empty;
         public string Position { get; set; } = string.Empty;
         public string Department { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
 
         // Дата рождения сотрудника для вычисления юбилеев (50, 55, 60, 65+ лет)
         public DateTime? BirthDate { get; set; }

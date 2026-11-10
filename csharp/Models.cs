@@ -32,6 +32,7 @@ namespace ShiftScheduleApp
         public string Name { get; set; }
         public string Position { get; set; }
         public string Department { get; set; }
+        public string Phone { get; set; }
         public decimal DailyRate { get; set; }
         public ScheduleType Schedule { get; set; }
         public int ShiftHours { get; set; }
@@ -50,6 +51,7 @@ namespace ShiftScheduleApp
             Name = "";
             Position = "";
             Department = "";
+            Phone = "";
             DailyRate = 3500;
             Schedule = ScheduleType.TwoTwo;
             ShiftHours = 12;
@@ -104,6 +106,7 @@ namespace ShiftScheduleApp
         public string EmployeeName { get; set; }
         public string Position { get; set; }
         public string Department { get; set; }
+        public string Phone { get; set; }
         public DateTime BirthDate { get; set; }
         public int Age { get; set; }
         public decimal Bonus { get; set; }
@@ -281,6 +284,37 @@ namespace ShiftScheduleApp
                    "Ваш добросовестный труд на позиции «" + position + "», верность профессии и высокий профессионализм вносят неоценимый вклад в развитие отдела «" + department + "». " +
                    "Вы заслужили искреннее признание и уважение коллег.\n\n" +
                    "Желаем Вам крепкого здоровья, неиссякаемой жизненной энергии, семейного счастья, оптимизма и благополучия на долгие годы!";
+        }
+
+        public static List<JubileeInfo> GetJubileesInMonth(List<Employee> employees, int year, int month)
+        {
+            List<JubileeInfo> result = new List<JubileeInfo>();
+            if (employees == null) return result;
+
+            foreach (Employee emp in employees)
+            {
+                if (!emp.BirthDate.HasValue) continue;
+                if (emp.BirthDate.Value.Month != month) continue;
+
+                int age = year - emp.BirthDate.Value.Year;
+                if (age >= 50 && (age % 5 == 0))
+                {
+                    result.Add(new JubileeInfo
+                    {
+                        EmployeeId = emp.Id,
+                        EmployeeName = emp.Name,
+                        Position = emp.Position,
+                        Department = emp.Department,
+                        Phone = emp.Phone ?? "",
+                        BirthDate = emp.BirthDate.Value,
+                        Age = age,
+                        Bonus = emp.JubileeBonus > 0 ? emp.JubileeBonus : 10000m,
+                        CongratulationText = GetJubileeGreeting(emp.Name, age, emp.Position, emp.Department)
+                    });
+                }
+            }
+
+            return result;
         }
     }
 }

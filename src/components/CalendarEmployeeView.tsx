@@ -6,6 +6,7 @@ import {
   HeartPulse,
   Sun,
   Clock,
+  Trash2,
 } from 'lucide-react';
 import { DayShiftInfo, Employee, EmployeeMonthCalculation, ShiftOverride } from '../types/schedule.ts';
 import {
@@ -27,6 +28,7 @@ interface CalendarEmployeeViewProps {
   overrides: Record<string, ShiftOverride>;
   onCellClick: (employee: Employee, dateStr: string, baseStatus: 'WORK' | 'OFF', currentOverride?: ShiftOverride) => void;
   onEditEmployee: (employee: Employee) => void;
+  onDeleteEmployee?: (id: string) => void;
 }
 
 export const CalendarEmployeeView: React.FC<CalendarEmployeeViewProps> = ({
@@ -40,6 +42,7 @@ export const CalendarEmployeeView: React.FC<CalendarEmployeeViewProps> = ({
   overrides,
   onCellClick,
   onEditEmployee,
+  onDeleteEmployee,
 }) => {
   const currentEmployee = employees.find((e) => e.id === selectedEmployeeId) || employees[0];
   const monthName = RUSSIAN_MONTHS[month - 1];
@@ -96,6 +99,20 @@ export const CalendarEmployeeView: React.FC<CalendarEmployeeViewProps> = ({
               >
                 Настроить ставку / график
               </button>
+              {onDeleteEmployee && (
+                <>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteEmployee(currentEmployee.id)}
+                    className="text-xs text-rose-600 hover:text-rose-700 hover:underline font-medium inline-flex items-center gap-1"
+                    title={`Удалить сотрудника ${currentEmployee.name}`}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Удалить</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

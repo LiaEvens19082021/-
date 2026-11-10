@@ -196,7 +196,23 @@ export default function App() {
   };
 
   const handleDeleteEmployee = (id: string) => {
+    const target = employees.find((e) => e.id === id);
+    const targetName = target ? target.name : 'этого сотрудника';
+    if (!window.confirm(`Вы уверены, что хотите удалить сотрудника "${targetName}"?\nВсе запланированные смены и расчёты по нему будут удалены.`)) {
+      return;
+    }
+
     setEmployees((prev) => prev.filter((e) => e.id !== id));
+    setOverrides((prev) => {
+      const copy = { ...prev };
+      Object.keys(copy).forEach((key) => {
+        if (key.startsWith(`${id}_`)) {
+          delete copy[key];
+        }
+      });
+      return copy;
+    });
+
     if (selectedEmployeeId === id) {
       const remaining = employees.filter((e) => e.id !== id);
       setSelectedEmployeeId(remaining[0]?.id || '');
@@ -259,6 +275,7 @@ export default function App() {
     const monthName = RUSSIAN_MONTHS[month - 1];
     const headers = [
       'ФИО сотрудника',
+      'Телефон',
       'Должность',
       'Отдел',
       'График',
@@ -286,6 +303,7 @@ export default function App() {
       if (!calc) return [];
       return [
         `"${emp.name}"`,
+        `"${emp.phone || ''}"`,
         `"${emp.position}"`,
         `"${emp.department}"`,
         `"${emp.scheduleType}"`,
@@ -367,6 +385,7 @@ export default function App() {
               });
             }}
             onEditEmployee={(emp) => setEmployeeModalTarget({ employee: emp })}
+            onDeleteEmployee={handleDeleteEmployee}
             selectedDepartment={selectedDepartment}
           />
         )}
@@ -382,6 +401,7 @@ export default function App() {
             onUpdateEmployeeRate={handleUpdateEmployeeRate}
             onUpdateEmployeeBonus={handleUpdateEmployeeBonus}
             onEditEmployee={(emp) => setEmployeeModalTarget({ employee: emp })}
+            onDeleteEmployee={handleDeleteEmployee}
             onExportCsv={handleExportCsv}
           />
         )}
@@ -405,6 +425,7 @@ export default function App() {
               });
             }}
             onEditEmployee={(emp) => setEmployeeModalTarget({ employee: emp })}
+            onDeleteEmployee={handleDeleteEmployee}
           />
         )}
       </main>

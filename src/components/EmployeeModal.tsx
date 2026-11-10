@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, DollarSign, Calendar, Clock, HeartPulse, Sparkles, Trash2, Check, Cake, Baby, Gift } from 'lucide-react';
+import { X, User, DollarSign, Calendar, Clock, HeartPulse, Sparkles, Trash2, Check, Cake, Baby, Gift, Phone } from 'lucide-react';
 import { Employee, SchedulePatternType } from '../types/schedule.ts';
 import { SCHEDULE_LABELS } from '../utils/scheduleCalculator.ts';
 
@@ -33,11 +33,16 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [name, setName] = useState(employee?.name || '');
   const [position, setPosition] = useState(employee?.position || '');
   const [department, setDepartment] = useState(employee?.department || departments[0] || 'Производство');
+  const [phone, setPhone] = useState(employee?.phone || '');
   const [dailyRate, setDailyRate] = useState<number>(employee?.dailyRate ?? 3500);
   const [shiftHours, setShiftHours] = useState<number>(employee?.shiftHours ?? 8);
   const [scheduleType, setScheduleType] = useState<SchedulePatternType>(employee?.scheduleType || '2/2');
   const [cycleStartDate, setCycleStartDate] = useState(employee?.cycleStartDate || '2026-11-01');
   const [birthDate, setBirthDate] = useState(employee?.birthDate || '');
+  const [sickPayPercentage, setSickPayPercentage] = useState<number>(employee?.sickPayPercentage ?? 80);
+  const [vacationPayPercentage, setVacationPayPercentage] = useState<number>(employee?.vacationPayPercentage ?? 100);
+  const [monthlyBonus, setMonthlyBonus] = useState<number>(employee?.monthlyBonus ?? 0);
+  const [avatarColor, setAvatarColor] = useState(employee?.avatarColor || AVATAR_COLORS[0]);
   const [maternityPayPercentage, setMaternityPayPercentage] = useState<number>(employee?.maternityPayPercentage ?? 100);
   const [maternityMonthlyAllowance, setMaternityMonthlyAllowance] = useState<number>(employee?.maternityMonthlyAllowance ?? 0);
   const [jubileeBonus, setJubileeBonus] = useState<number>(employee?.jubileeBonus ?? 10000);
@@ -60,6 +65,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       name: name.trim(),
       position: position.trim() || 'Сотрудник',
       department: department.trim() || 'Общий',
+      phone: phone.trim() || undefined,
       dailyRate: Math.max(0, Number(dailyRate)),
       shiftHours: Math.max(1, Math.min(24, Number(shiftHours))),
       scheduleType,
@@ -138,24 +144,40 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
             </div>
           </div>
 
-          {/* Department */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Отдел / Подразделение:
-            </label>
-            <input
-              type="text"
-              list="dept-options"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              placeholder="Производство, Склад, Бухгалтерия..."
-              className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <datalist id="dept-options">
-              {departments.map((d) => (
-                <option key={d} value={d} />
-              ))}
-            </datalist>
+          {/* Department & Phone */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Отдел / Подразделение:
+              </label>
+              <input
+                type="text"
+                list="dept-options"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                placeholder="Производство, Склад, Бухгалтерия..."
+                className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <datalist id="dept-options">
+                {departments.map((d) => (
+                  <option key={d} value={d} />
+                ))}
+              </datalist>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                <Phone className="w-3.5 h-3.5 text-blue-600" />
+                <span>Номер телефона:</span>
+              </label>
+              <input
+                type="tel"
+                placeholder="+7 (999) 000-00-00"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400"
+              />
+            </div>
           </div>
 
           {/* RATE & HOURS - Core User Requirement */}
@@ -410,14 +432,12 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (confirm(`Удалить сотрудника ${employee?.name}?`)) {
-                    onDelete(employee!.id);
-                    onClose();
-                  }
+                  onDelete(employee!.id);
+                  onClose();
                 }}
-                className="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1 hover:underline"
+                className="text-xs text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold transition shadow-2xs"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                 <span>Удалить сотрудника</span>
               </button>
             ) : (

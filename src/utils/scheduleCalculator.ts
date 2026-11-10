@@ -480,6 +480,7 @@ export function getJubileesInMonth(
         employeeName: emp.name,
         position: emp.position,
         department: emp.department,
+        phone: emp.phone,
         birthDate: emp.birthDate,
         dayOfMonth: bDay,
         age,

@@ -14,6 +14,8 @@ import {
   Baby,
   Cake,
   Gift,
+  Phone,
+  Trash2,
 } from 'lucide-react';
 import { Employee, EmployeeMonthCalculation, DayShiftInfo } from '../types/schedule.ts';
 import { formatCurrency, formatNumber, RUSSIAN_MONTHS } from '../utils/scheduleCalculator.ts';
@@ -29,6 +31,7 @@ interface PayrollViewProps {
   onUpdateEmployeeRate: (employeeId: string, newRate: number) => void;
   onUpdateEmployeeBonus: (employeeId: string, newBonus: number) => void;
   onEditEmployee: (employee: Employee) => void;
+  onDeleteEmployee?: (employeeId: string) => void;
   onExportCsv: () => void;
 }
 
@@ -42,6 +45,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
   onUpdateEmployeeRate,
   onUpdateEmployeeBonus,
   onEditEmployee,
+  onDeleteEmployee,
   onExportCsv,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -406,6 +410,19 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                               <span className="text-blue-700 font-semibold">{emp.scheduleType}</span>
                               <span>•</span>
                               <span>{emp.department}</span>
+                              {emp.phone && (
+                                <>
+                                  <span>•</span>
+                                  <a
+                                    href={`tel:${emp.phone}`}
+                                    className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-600 transition"
+                                    title={`Позвонить: ${emp.phone}`}
+                                  >
+                                    <Phone className="w-2.5 h-2.5 text-slate-400" />
+                                    <span>{emp.phone}</span>
+                                  </a>
+                                </>
+                              )}
                               {emp.birthDate && (
                                 <>
                                   <span>•</span>
@@ -607,6 +624,17 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
+
+                          {onDeleteEmployee && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteEmployee(emp.id)}
+                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title={`Удалить сотрудника ${emp.name}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

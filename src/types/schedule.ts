@@ -23,6 +23,7 @@ export interface Employee {
   name: string;
   position: string;
   department: string;
+  phone?: string;               // Номер телефона сотрудника (например +7 (999) 123-45-67)
   dailyRate: number;            // Ставка за 1 рабочий день (руб.)
   shiftHours: number;           // Стандартные часы смены (8, 12, 24 и т.д.)
   scheduleType: SchedulePatternType;
@@ -100,6 +101,7 @@ export interface JubileeCelebration {
   employeeName: string;
   position: string;
   department: string;
+  phone?: string;
   birthDate: string;
   dayOfMonth: number;
   age: number; // 50, 55, 60, 65, 70...

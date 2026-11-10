@@ -7,6 +7,8 @@ import {
   Info,
   Search,
   Cake,
+  Phone,
+  Trash2,
 } from 'lucide-react';
 import { DayShiftInfo, Employee, EmployeeMonthCalculation, ShiftOverride, ShiftStatus } from '../types/schedule.ts';
 import {
@@ -27,6 +29,7 @@ interface ScheduleMatrixProps {
   payrollMap: Record<string, EmployeeMonthCalculation>;
   onCellClick: (employee: Employee, dateStr: string, baseStatus: 'WORK' | 'OFF', currentOverride?: ShiftOverride) => void;
   onEditEmployee: (employee: Employee) => void;
+  onDeleteEmployee?: (employeeId: string) => void;
   selectedDepartment: string;
 }
 
@@ -39,6 +42,7 @@ export const ScheduleMatrix: React.FC<ScheduleMatrixProps> = ({
   payrollMap,
   onCellClick,
   onEditEmployee,
+  onDeleteEmployee,
   selectedDepartment,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -212,19 +216,45 @@ export const ScheduleMatrix: React.FC<ScheduleMatrixProps> = ({
                               <span>{emp.position}</span>
                               <span>•</span>
                               <span className="text-blue-700 font-semibold">{emp.scheduleType}</span>
+                              {emp.phone && (
+                                <>
+                                  <span>•</span>
+                                  <a
+                                    href={`tel:${emp.phone}`}
+                                    className="inline-flex items-center gap-0.5 text-slate-600 hover:text-blue-600 transition"
+                                    title={`Позвонить: ${emp.phone}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Phone className="w-2.5 h-2.5 text-slate-400" />
+                                    <span>{emp.phone}</span>
+                                  </a>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
 
-                        {/* Edit employee button */}
-                        <button
-                          type="button"
-                          onClick={() => onEditEmployee(emp)}
-                          title="Редактировать ставку или график"
-                          className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition shrink-0"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
+                        {/* Action buttons: Edit & Delete employee */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => onEditEmployee(emp)}
+                            title="Редактировать ставку или график"
+                            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          {onDeleteEmployee && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteEmployee(emp.id)}
+                              title={`Удалить сотрудника ${emp.name}`}
+                              className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Daily Rate Badge */}

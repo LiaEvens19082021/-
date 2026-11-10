@@ -77,6 +77,11 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
               <span className="text-slate-600 block">
                 Подразделение: <strong className="text-slate-800">{employee.department}</strong>
               </span>
+              {employee.phone && (
+                <span className="text-slate-600 block">
+                  Телефон: <strong className="text-slate-800">{employee.phone}</strong>
+                </span>
+              )}
             </div>
 
             <div className="text-right">

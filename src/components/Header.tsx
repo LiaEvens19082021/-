@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Cake,
   Baby,
+  HeartPulse,
 } from 'lucide-react';
 import { RUSSIAN_MONTHS, formatCurrency } from '../utils/scheduleCalculator.ts';
 import { EmployeeMonthCalculation, JubileeCelebration } from '../types/schedule.ts';

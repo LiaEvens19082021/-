@@ -131,13 +131,13 @@
     let currentDept = "ALL";
 
     let employees = [
-      { id: "emp-1", name: "Иванов Алексей Петрович", birthDate: "1976-11-15", pos: "Старший сменный мастер", dept: "Производство", rate: 4500, sched: "2/2", hours: 12, anchor: "2026-11-01", bonus: 5000, jubileeBonus: 15000 },
-      { id: "emp-2", name: "Смирнова Екатерина Михайловна", birthDate: "1992-04-18", pos: "Оператор производственной линии", dept: "Производство", rate: 3600, sched: "2/2", hours: 12, anchor: "2026-11-03", bonus: 0, jubileeBonus: 0 },
-      { id: "emp-3", name: "Кузнецов Дмитрий Сергеевич", birthDate: "1988-08-22", pos: "Дежурный инженер КИПиА", dept: "Служба эксплуатации", rate: 5200, sched: "1/3", hours: 24, anchor: "2026-11-01", bonus: 0, jubileeBonus: 0 },
-      { id: "emp-4", name: "Морозова Анна Владимировна", birthDate: "1995-03-12", pos: "Бухгалтер-экономист", dept: "Финансовый отдел", rate: 4200, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 0, jubileeBonus: 0 },
-      { id: "emp-5", name: "Васильев Роман Андреевич", birthDate: "1966-11-28", pos: "Кладовщик-комплектовщик", dept: "Логистика", rate: 3400, sched: "3/3", hours: 10, anchor: "2026-11-01", bonus: 0, jubileeBonus: 20000 },
-      { id: "emp-6", name: "Попова Ольга Николаевна", birthDate: "1985-09-05", pos: "Менеджер по отгрузкам", dept: "Логистика", rate: 3800, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 7000, jubileeBonus: 0 },
-      { id: "emp-7", name: "Соколова Марина Александровна", birthDate: "1993-06-10", pos: "Специалист по кадрам", dept: "Финансовый отдел", rate: 3900, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 0, jubileeBonus: 0, maternityAllowance: 15000 }
+      { id: "emp-1", name: "Иванов Алексей Петрович", phone: "+7 (921) 450-12-34", birthDate: "1976-11-15", pos: "Старший сменный мастер", dept: "Производство", rate: 4500, sched: "2/2", hours: 12, anchor: "2026-11-01", bonus: 5000, jubileeBonus: 15000 },
+      { id: "emp-2", name: "Смирнова Екатерина Михайловна", phone: "+7 (911) 345-67-89", birthDate: "1992-04-18", pos: "Оператор производственной линии", dept: "Производство", rate: 3600, sched: "2/2", hours: 12, anchor: "2026-11-03", bonus: 0, jubileeBonus: 0 },
+      { id: "emp-3", name: "Кузнецов Дмитрий Сергеевич", phone: "+7 (905) 789-01-23", birthDate: "1988-08-22", pos: "Дежурный инженер КИПиА", dept: "Служба эксплуатации", rate: 5200, sched: "1/3", hours: 24, anchor: "2026-11-01", bonus: 0, jubileeBonus: 0 },
+      { id: "emp-4", name: "Морозова Анна Владимировна", phone: "+7 (916) 234-56-78", birthDate: "1995-03-12", pos: "Бухгалтер-экономист", dept: "Финансовый отдел", rate: 4200, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 0, jubileeBonus: 0 },
+      { id: "emp-5", name: "Васильев Роман Андреевич", phone: "+7 (926) 890-12-34", birthDate: "1966-11-28", pos: "Кладовщик-комплектовщик", dept: "Логистика", rate: 3400, sched: "3/3", hours: 10, anchor: "2026-11-01", bonus: 0, jubileeBonus: 20000 },
+      { id: "emp-6", name: "Попова Ольга Николаевна", phone: "+7 (903) 567-89-01", birthDate: "1985-09-05", pos: "Менеджер по отгрузкам", dept: "Логистика", rate: 3800, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 7000, jubileeBonus: 0 },
+      { id: "emp-7", name: "Соколова Марина Александровна", phone: "+7 (912) 678-90-12", birthDate: "1993-06-10", pos: "Специалист по кадрам", dept: "Финансовый отдел", rate: 3900, sched: "5/2", hours: 8, anchor: "2026-11-01", bonus: 0, jubileeBonus: 0, maternityAllowance: 15000 }
     ];
 
     let overrides = {
@@ -224,7 +224,7 @@
         const jub = getJubileeForMonth(emp, year, month);
         const nameBadge = jub ? `🎂 <span class="text-amber-800 font-bold">${emp.name} (${jub.age}л)</span>` : emp.name;
 
-        let rowCells = `<td class="p-2 font-medium border-r border-slate-200"><div>${nameBadge}</div><div class="text-[11px] text-slate-500">${emp.sched} • ${emp.rate.toLocaleString('ru')} ₽/дн</div></td>`;
+        let rowCells = `<td class="p-2 font-medium border-r border-slate-200"><div class="flex items-center justify-between gap-1"><div>${nameBadge}</div><button onclick="deleteEmployee('${emp.id}')" title="Удалить сотрудника ${emp.name}" class="text-slate-400 hover:text-rose-600 px-1 py-0.5 rounded text-xs transition">🗑</button></div><div class="text-[11px] text-slate-500">${emp.sched} • ${emp.rate.toLocaleString('ru')} ₽/дн ${emp.phone ? ' • 📞 ' + emp.phone : ''}</div></td>`;
 
         for (let d = 1; d <= daysCount; d++) {
           const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -319,7 +319,7 @@
         const jub = getJubileeForMonth(emp, year, month);
 
         payRows += `<tr class="border-b border-slate-100 hover:bg-slate-50">
-          <td class="p-2.5 font-bold">${emp.name}</td>
+          <td class="p-2.5 font-bold"><div class="flex items-center justify-between gap-1"><span>${emp.name}</span><button onclick="deleteEmployee('${emp.id}')" title="Удалить сотрудника" class="text-slate-400 hover:text-rose-600 px-1 py-0.5 rounded text-xs">🗑</button></div></td>
           <td class="p-2.5 text-slate-500">${emp.dept}</td>
           <td class="p-2.5 cursor-pointer text-blue-600 underline font-semibold" onclick="editRate('${emp.id}')">${emp.rate.toLocaleString('ru')} ₽/дн</td>
           <td class="p-2.5">${empActual} / ${empPlanned}</td>
@@ -333,6 +333,17 @@
         </tr>`;
       });
       document.getElementById("payrollTable").innerHTML = payThead + `<tbody>${payRows}</tbody>`;
+    }
+
+    function deleteEmployee(empId) {
+      const emp = employees.find(e => e.id === empId);
+      if (!emp) return;
+      if (!confirm(`Вы действительно хотите удалить сотрудника "${emp.name}"?\nВсе данные и смены будут удалены.`)) return;
+      employees = employees.filter(e => e.id !== empId);
+      Object.keys(overrides).forEach(k => {
+        if (k.startsWith(empId + "_")) delete overrides[k];
+      });
+      render();
     }
 
     function editCell(empId, dateStr, currentStatus) {
@@ -407,7 +418,7 @@
     };
 
     document.getElementById("btnExportCsv").onclick = () => {
-      let csv = "ФИО;Дата рождения;Возраст;Должность;Отдел;Дневная ставка;Отработано смен;Оклад;Больничные;Отпускные;Декретные;Премия;Юбилейная премия;ИТОГО\\n";
+      let csv = "ФИО;Телефон;Дата рождения;Возраст;Должность;Отдел;Дневная ставка;Отработано смен;Оклад;Больничные;Отпускные;Декретные;Премия;Юбилейная премия;ИТОГО\n";
       const daysCount = getDaysInMonth(year, month);
       employees.forEach(emp => {
         let actual = 0, sick = 0, vac = 0, mat = 0;
@@ -422,7 +433,7 @@
         const matPay = (mat * emp.rate * 1.0) + (emp.maternityAllowance || 0);
         const jubPay = emp.jubileeBonus || 0;
         const total = (actual * emp.rate) + (sick * emp.rate * 0.8) + (vac * emp.rate * 1.0) + matPay + emp.bonus + jubPay;
-        csv += `${emp.name};${emp.birthDate};${emp.pos};${emp.dept};${emp.rate};${actual};${actual * emp.rate};${sick * emp.rate * 0.8};${vac * emp.rate};${matPay};${emp.bonus};${jubPay};${total}\\n`;
+        csv += `${emp.name};${emp.phone || ''};${emp.birthDate};${emp.pos};${emp.dept};${emp.rate};${actual};${actual * emp.rate};${sick * emp.rate * 0.8};${vac * emp.rate};${matPay};${emp.bonus};${jubPay};${total}\n`;
       });
       const blob = new Blob(["\\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
