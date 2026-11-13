@@ -16,6 +16,7 @@ namespace ShiftScheduleApp
 
         private List<Employee> _employees;
         private Dictionary<string, ShiftOverride> _overrides;
+        private readonly DatabaseService _db = new DatabaseService();
 
         // UI Controls
         private Label _lblMonth;
@@ -27,6 +28,7 @@ namespace ShiftScheduleApp
         private Label _lblKpiMaternity;
         private Label _lblKpiPayroll;
         private Button _btnJubileesHeader;
+        private Label _lblDbStatus;
 
         private TabControl _tabControl;
         private TabPage _tabMatrix;
@@ -47,12 +49,30 @@ namespace ShiftScheduleApp
         {
             InitializeData();
             InitializeComponent();
+            UpdateDbStatusLabel();
             RefreshAllViews();
         }
 
         private void InitializeData()
         {
-            _employees = new List<Employee>
+            var defaultEmployees = BuildDefaultEmployees();
+            var defaultOverrides = BuildDefaultOverrides();
+
+            if (_db.TryConnectAndEnsureSchema(defaultEmployees, defaultOverrides, seedIfEmpty: true))
+            {
+                _employees = _db.LoadAllEmployees();
+                _overrides = _db.LoadAllOverrides();
+            }
+            else
+            {
+                _employees = defaultEmployees;
+                _overrides = defaultOverrides;
+            }
+        }
+
+        private List<Employee> BuildDefaultEmployees()
+        {
+            return new List<Employee>
             {
                 new Employee
                 {
@@ -149,8 +169,11 @@ namespace ShiftScheduleApp
                     MaternityMonthlyAllowance = 15000
                 }
             };
+        }
 
-            _overrides = new Dictionary<string, ShiftOverride>
+        private Dictionary<string, ShiftOverride> BuildDefaultOverrides()
+        {
+            var overrides = new Dictionary<string, ShiftOverride>
             {
                 ["emp-1_2026-11-07"] = new ShiftOverride { Status = ShiftStatus.UnplannedWork, Hours = 12, Note = "Замена по производственной необходимости" },
                 ["emp-2_2026-11-12"] = new ShiftOverride { Status = ShiftStatus.UnplannedOff, Hours = 0, Note = "Отгул по семейным обстоятельствам" },
@@ -171,19 +194,21 @@ namespace ShiftScheduleApp
             for (int d = 1; d <= 30; d++)
             {
                 string key = "emp-7_2026-11-" + d.ToString("D2");
-                _overrides[key] = new ShiftOverride
+                overrides[key] = new ShiftOverride
                 {
                     Status = ShiftStatus.Maternity,
                     Hours = 0,
                     Note = "Декретный отпуск (по беременности и родам)"
                 };
             }
+
+            return overrides;
         }
 
         private void InitializeComponent()
         {
-            this.Text = "График Смен и Автоматический Расчёт Зарплаты (C# 7.3 / .NET Windows)";
-            this.Size = new Size(1280, 800);
+            this.Text = "График Смен и Автоматический Расчёт Зарплаты (.NET 8 + PostgreSQL / pgAdmin 4)";
+            this.Size = new Size(1400, 820);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
             this.BackColor = Color.FromArgb(248, 250, 252);
@@ -258,12 +283,12 @@ namespace ShiftScheduleApp
             };
 
             // Department filter
-            Label lblDept = new Label { Text = "Отдел:", Location = new Point(810, 16), AutoSize = true };
+            Label lblDept = new Label { Text = "Отдел:", Location = new Point(795, 16), AutoSize = true };
             _cmbDept = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Location = new Point(865, 13),
-                Size = new Size(180, 26)
+                Location = new Point(845, 13),
+                Size = new Size(145, 26)
             };
             _cmbDept.Items.Add("ВСЕ");
             _cmbDept.Items.Add("Производство");
@@ -276,12 +301,12 @@ namespace ShiftScheduleApp
                 RefreshAllViews();
             };
 
-            // Action Buttons
+            // Action Buttons (cleanly spaced without overlap)
             _btnJubileesHeader = new Button
             {
-                Text = "🎂 Юбиляры месяца (50+)",
-                Location = new Point(1060, 11),
-                Size = new Size(180, 30),
+                Text = "🎂 Юбиляры (50+)",
+                Location = new Point(1000, 11),
+                Size = new Size(145, 30),
                 BackColor = Color.FromArgb(254, 243, 199),
                 ForeColor = Color.FromArgb(146, 64, 14),
                 FlatStyle = FlatStyle.Flat,
@@ -293,7 +318,7 @@ namespace ShiftScheduleApp
             Button btnAddEmp = new Button
             {
                 Text = "+ Сотрудник",
-                Location = new Point(1125, 11),
+                Location = new Point(1155, 11),
                 Size = new Size(110, 30),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -306,8 +331,8 @@ namespace ShiftScheduleApp
             Button btnDeleteEmp = new Button
             {
                 Text = "Удалить",
-                Location = new Point(1245, 11),
-                Size = new Size(100, 30),
+                Location = new Point(1273, 11),
+                Size = new Size(92, 30),
                 BackColor = Color.FromArgb(254, 242, 242),
                 ForeColor = Color.FromArgb(220, 38, 38),
                 FlatStyle = FlatStyle.Flat,
@@ -403,8 +428,8 @@ namespace ShiftScheduleApp
 
             Button btnJubileeBottom = new Button
             {
-                Text = "🎂 Поздравление юбиляров (от 50 лет)",
-                Size = new Size(270, 28),
+                Text = "🎂 Юбиляры (50+)",
+                Size = new Size(155, 28),
                 Location = new Point(505, 8),
                 BackColor = Color.FromArgb(254, 243, 199),
                 ForeColor = Color.FromArgb(146, 64, 14),
@@ -414,18 +439,33 @@ namespace ShiftScheduleApp
             btnJubileeBottom.FlatAppearance.BorderColor = Color.FromArgb(252, 211, 77);
             btnJubileeBottom.Click += BtnJubilees_Click;
 
-            Label lblHint = new Label
+            Button btnDatabase = new Button
             {
-                Text = "💡 Кликните дважды по ячейке дня для смены статуса",
+                Text = "🗄️ База PostgreSQL (pgAdmin 4)",
+                Size = new Size(220, 28),
+                Location = new Point(670, 8),
+                BackColor = Color.FromArgb(239, 246, 255),
+                ForeColor = Color.FromArgb(29, 78, 216),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold)
+            };
+            btnDatabase.FlatAppearance.BorderColor = Color.FromArgb(191, 219, 254);
+            btnDatabase.Click += BtnDatabaseSettings_Click;
+
+            _lblDbStatus = new Label
+            {
+                Text = "Локальный режим (без БД)",
                 ForeColor = Color.FromArgb(100, 116, 139),
                 AutoSize = true,
-                Location = new Point(785, 14)
+                Location = new Point(900, 14),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold)
             };
 
             pnlBottom.Controls.Add(btnExportCsv);
             pnlBottom.Controls.Add(btnPeriod);
             pnlBottom.Controls.Add(btnJubileeBottom);
-            pnlBottom.Controls.Add(lblHint);
+            pnlBottom.Controls.Add(btnDatabase);
+            pnlBottom.Controls.Add(_lblDbStatus);
             this.Controls.Add(pnlBottom);
         }
 
@@ -937,12 +977,14 @@ namespace ShiftScheduleApp
                         default: newStatus = ShiftStatus.Work; break;
                     }
 
-                    _overrides[key] = new ShiftOverride
+                    var ov = new ShiftOverride
                     {
                         Status = newStatus,
                         Hours = (newStatus == ShiftStatus.Work || newStatus == ShiftStatus.UnplannedWork) ? emp.ShiftHours : 0,
                         Note = txtNote.Text
                     };
+                    _overrides[key] = ov;
+                    _db.UpsertShiftOverride(emp.Id, date, ov);
 
                     RefreshAllViews();
                 }
@@ -979,6 +1021,7 @@ namespace ShiftScheduleApp
                     if (decimal.TryParse(txt.Text, out rate) && rate > 0)
                     {
                         emp.DailyRate = rate;
+                        _db.UpsertEmployee(emp);
                         RefreshAllViews();
                     }
                 }
@@ -1154,6 +1197,7 @@ namespace ShiftScheduleApp
                         {
                             emp.JubileeBonus = b;
                             j.Bonus = b;
+                            _db.UpsertEmployee(emp);
                             RefreshAllViews();
                             MessageBox.Show("Юбилейная премия для " + emp.Name + " установлена в размере " + b.ToString("N0") + " ₽!", "Сохранено", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
@@ -1246,7 +1290,7 @@ namespace ShiftScheduleApp
                     else if (cmbSched.SelectedIndex == 2) { sched = ScheduleType.OneThree; hours = 24; }
                     else if (cmbSched.SelectedIndex == 3) { sched = ScheduleType.ThreeThree; hours = 10; }
 
-                    _employees.Add(new Employee
+                    var newEmp = new Employee
                     {
                         Name = txtName.Text.Trim(),
                         Phone = txtPhone.Text.Trim(),
@@ -1257,7 +1301,9 @@ namespace ShiftScheduleApp
                         Schedule = sched,
                         ShiftHours = hours,
                         AnchorDate = new DateTime(_year, _month, 1)
-                    });
+                    };
+                    _employees.Add(newEmp);
+                    _db.UpsertEmployee(newEmp);
 
                     RefreshAllViews();
                 }
@@ -1364,6 +1410,7 @@ namespace ShiftScheduleApp
                         }
 
                         _employees.Remove(target);
+                        _db.DeleteEmployee(target.Id);
                         RefreshAllViews();
                         MessageBox.Show("Сотрудник \"" + target.Name + "\" успешно удален.", "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -1422,13 +1469,16 @@ namespace ShiftScheduleApp
 
                     for (int d = start; d <= end; d++)
                     {
-                        string key = selectedEmp.Id + "_" + _year.ToString("D4") + "-" + _month.ToString("D2") + "-" + d.ToString("D2");
-                        _overrides[key] = new ShiftOverride
+                        DateTime date = new DateTime(_year, _month, d);
+                        string key = selectedEmp.Id + "_" + date.ToString("yyyy-MM-dd");
+                        var ov = new ShiftOverride
                         {
                             Status = status,
                             Hours = 0,
                             Note = note
                         };
+                        _overrides[key] = ov;
+                        _db.UpsertShiftOverride(selectedEmp.Id, date, ov);
                     }
 
                     RefreshAllViews();
@@ -1479,6 +1529,176 @@ namespace ShiftScheduleApp
                     File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
                     MessageBox.Show("Ведомость успешно экспортирована в файл:\n" + sfd.FileName, "Экспорт завершён", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
+            }
+        }
+
+        private void UpdateDbStatusLabel()
+        {
+            if (_lblDbStatus == null) return;
+            if (_db.IsConnected)
+            {
+                _lblDbStatus.Text = "🟢 PostgreSQL (pgAdmin 4): " + _db.Config.Database + "@" + _db.Config.Host;
+                _lblDbStatus.ForeColor = Color.FromArgb(22, 101, 52);
+            }
+            else if (_db.Config.Enabled && !string.IsNullOrEmpty(_db.LastError))
+            {
+                _lblDbStatus.Text = "🔴 Ошибка подключения к PostgreSQL (нажмите кнопку БД)";
+                _lblDbStatus.ForeColor = Color.FromArgb(185, 28, 28);
+            }
+            else
+            {
+                _lblDbStatus.Text = "🟡 Локальный режим (БД PostgreSQL не подключена)";
+                _lblDbStatus.ForeColor = Color.FromArgb(100, 116, 139);
+            }
+        }
+
+        private void BtnDatabaseSettings_Click(object sender, EventArgs e)
+        {
+            using (Form dlg = new Form())
+            {
+                dlg.Text = "Подключение к базе данных PostgreSQL (pgAdmin 4)";
+                dlg.Size = new Size(470, 420);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+
+                Label lblInfo = new Label
+                {
+                    Text = "Укажите параметры вашей базы данных из pgAdmin 4.\nТаблицы (employees, shift_overrides) создадутся автоматически!",
+                    Location = new Point(20, 14),
+                    AutoSize = true,
+                    ForeColor = Color.FromArgb(71, 85, 105),
+                    Font = new Font("Segoe UI", 8.5f)
+                };
+
+                Label lblHost = new Label { Text = "Сервер (Host):", Location = new Point(20, 62), AutoSize = true };
+                TextBox txtHost = new TextBox { Text = _db.Config.Host, Location = new Point(20, 82), Size = new Size(290, 24) };
+
+                Label lblPort = new Label { Text = "Порт:", Location = new Point(325, 62), AutoSize = true };
+                TextBox txtPort = new TextBox { Text = _db.Config.Port.ToString(), Location = new Point(325, 82), Size = new Size(105, 24) };
+
+                Label lblDb = new Label { Text = "Имя базы данных в pgAdmin 4:", Location = new Point(20, 116), AutoSize = true };
+                TextBox txtDb = new TextBox { Text = _db.Config.Database, Location = new Point(20, 136), Size = new Size(410, 24) };
+
+                Label lblUser = new Label { Text = "Имя пользователя (обычно postgres):", Location = new Point(20, 170), AutoSize = true };
+                TextBox txtUser = new TextBox { Text = _db.Config.Username, Location = new Point(20, 190), Size = new Size(410, 24) };
+
+                Label lblPass = new Label { Text = "Пароль от PostgreSQL (pgAdmin 4):", Location = new Point(20, 224), AutoSize = true };
+                TextBox txtPass = new TextBox { Text = _db.Config.Password, Location = new Point(20, 244), Size = new Size(410, 24), UseSystemPasswordChar = true };
+
+                CheckBox chkUpload = new CheckBox
+                {
+                    Text = "Перенести текущих сотрудников и смены в базу при первом подключении",
+                    Location = new Point(20, 280),
+                    AutoSize = true,
+                    Checked = true
+                };
+
+                Button btnConnect = new Button
+                {
+                    Text = "Подключить и создать таблицы",
+                    Location = new Point(20, 325),
+                    Size = new Size(215, 34),
+                    BackColor = Color.FromArgb(37, 99, 235),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+                };
+                btnConnect.FlatAppearance.BorderSize = 0;
+
+                Button btnDisable = new Button
+                {
+                    Text = "Откл. БД",
+                    Location = new Point(245, 325),
+                    Size = new Size(90, 34),
+                    BackColor = Color.FromArgb(241, 245, 249),
+                    FlatStyle = FlatStyle.Flat
+                };
+
+                Button btnCancel = new Button
+                {
+                    Text = "Закрыть",
+                    DialogResult = DialogResult.Cancel,
+                    Location = new Point(345, 325),
+                    Size = new Size(85, 34)
+                };
+
+                btnConnect.Click += (s, ev) =>
+                {
+                    int.TryParse(txtPort.Text, out int port);
+                    var cfg = new DbConfig
+                    {
+                        Host = txtHost.Text.Trim(),
+                        Port = port > 0 ? port : 5432,
+                        Database = txtDb.Text.Trim(),
+                        Username = txtUser.Text.Trim(),
+                        Password = txtPass.Text,
+                        Enabled = true
+                    };
+
+                    if (!_db.TestConnection(cfg, out string version, out string err))
+                    {
+                        MessageBox.Show(
+                            "Не удалось подключиться к PostgreSQL:\n" + err +
+                            "\n\nПроверьте в pgAdmin 4, что база данных \"" + cfg.Database + "\" создана, служба PostgreSQL запущена, а логин и пароль указаны верно.",
+                            "Ошибка подключения",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error
+                        );
+                        return;
+                    }
+
+                    _db.SaveConfig(cfg);
+                    if (chkUpload.Checked)
+                    {
+                        _db.TryConnectAndEnsureSchema(_employees, _overrides, seedIfEmpty: true);
+                        _db.PushAllToDatabase(_employees, _overrides);
+                    }
+                    else
+                    {
+                        _db.TryConnectAndEnsureSchema(_employees, _overrides, seedIfEmpty: false);
+                    }
+
+                    _employees = _db.LoadAllEmployees();
+                    _overrides = _db.LoadAllOverrides();
+                    UpdateDbStatusLabel();
+                    RefreshAllViews();
+
+                    MessageBox.Show(
+                        "База данных PostgreSQL успешно подключена!\n\nСервер: " + version +
+                        "\nТеперь все сотрудники, номера телефонов, смены и расчёты сохраняются в pgAdmin 4.",
+                        "Успех",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                };
+
+                btnDisable.Click += (s, ev) =>
+                {
+                    var cfg = _db.Config;
+                    cfg.Enabled = false;
+                    _db.SaveConfig(cfg);
+                    _db.TryConnectAndEnsureSchema(null, null, false);
+                    UpdateDbStatusLabel();
+                    MessageBox.Show("Переключено на локальный режим без БД.", "Режим изменён", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    dlg.Close();
+                };
+
+                dlg.Controls.Add(lblInfo);
+                dlg.Controls.Add(lblHost); dlg.Controls.Add(txtHost);
+                dlg.Controls.Add(lblPort); dlg.Controls.Add(txtPort);
+                dlg.Controls.Add(lblDb); dlg.Controls.Add(txtDb);
+                dlg.Controls.Add(lblUser); dlg.Controls.Add(txtUser);
+                dlg.Controls.Add(lblPass); dlg.Controls.Add(txtPass);
+                dlg.Controls.Add(chkUpload);
+                dlg.Controls.Add(btnConnect);
+                dlg.Controls.Add(btnDisable);
+                dlg.Controls.Add(btnCancel);
+
+                dlg.ShowDialog();
             }
         }
     }

@@ -47,6 +47,14 @@ export const CalendarEmployeeView: React.FC<CalendarEmployeeViewProps> = ({
   const currentEmployee = employees.find((e) => e.id === selectedEmployeeId) || employees[0];
   const monthName = RUSSIAN_MONTHS[month - 1];
 
+  if (!currentEmployee) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-500 text-sm">
+        Список сотрудников пуст. Добавьте сотрудника, чтобы просмотреть его календарь смен.
+      </div>
+    );
+  }
+
   // Build calendar matrix (starting Monday = 1 to Sunday = 0/7)
   const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
   const startingDayOffset = (firstDayOfMonth + 6) % 7;

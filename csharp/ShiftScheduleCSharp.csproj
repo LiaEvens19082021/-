@@ -2,13 +2,19 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <!-- Работает 100% БЕЗ Node.js. Запускается в Visual Studio по клавише F5 -->
-    <TargetFramework>net7.0-windows</TargetFramework>
-    <LangVersion>7.3</LangVersion>
+    <!-- Работает на .NET 8 (C# 12) БЕЗ Node.js. Запускается в Visual Studio 2022 по клавише F5 -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <LangVersion>12.0</LangVersion>
     <Nullable>disable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>ShiftScheduleApp</RootNamespace>
     <AssemblyName>ShiftScheduleApp</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Официальный драйвер PostgreSQL для подключения базы данных из pgAdmin 4 -->
+    <PackageReference Include="Npgsql" Version="8.0.5" />
+  </ItemGroup>
 
 </Project>

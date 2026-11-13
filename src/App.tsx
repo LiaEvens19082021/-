@@ -18,6 +18,7 @@ import { EmployeeModal } from './components/EmployeeModal.tsx';
 import { BatchPeriodModal } from './components/BatchPeriodModal.tsx';
 import { BulkScheduleModal } from './components/BulkScheduleModal.tsx';
 import { JubileeCelebrationModal } from './components/JubileeCelebrationModal.tsx';
+import { ConfirmModal } from './components/ConfirmModal.tsx';
 
 const STORAGE_KEYS = {
   EMPLOYEES: 'shift_app_employees_v1',
@@ -95,6 +96,11 @@ export default function App() {
   const [isBatchPeriodOpen, setIsBatchPeriodOpen] = useState(false);
   const [isBulkScheduleOpen, setIsBulkScheduleOpen] = useState(false);
   const [isJubileeModalOpen, setIsJubileeModalOpen] = useState(false);
+  const [confirmState, setConfirmState] = useState<
+    | { type: 'deleteEmployee'; employeeId: string; employeeName: string; employeeDepartment: string }
+    | { type: 'resetData' }
+    | null
+  >(null);
 
   // Departments list
   const departments = useMemo(() => {
@@ -197,12 +203,23 @@ export default function App() {
 
   const handleDeleteEmployee = (id: string) => {
     const target = employees.find((e) => e.id === id);
-    const targetName = target ? target.name : 'этого сотрудника';
-    if (!window.confirm(`Вы уверены, что хотите удалить сотрудника "${targetName}"?\nВсе запланированные смены и расчёты по нему будут удалены.`)) {
-      return;
-    }
+    if (!target) return;
+    setConfirmState({
+      type: 'deleteEmployee',
+      employeeId: target.id,
+      employeeName: target.name,
+      employeeDepartment: target.department,
+    });
+  };
 
-    setEmployees((prev) => prev.filter((e) => e.id !== id));
+  const executeDeleteEmployee = (id: string) => {
+    setEmployees((prev) => {
+      const remaining = prev.filter((e) => e.id !== id);
+      if (selectedEmployeeId === id) {
+        setSelectedEmployeeId(remaining[0]?.id || '');
+      }
+      return remaining;
+    });
     setOverrides((prev) => {
       const copy = { ...prev };
       Object.keys(copy).forEach((key) => {
@@ -212,11 +229,6 @@ export default function App() {
       });
       return copy;
     });
-
-    if (selectedEmployeeId === id) {
-      const remaining = employees.filter((e) => e.id !== id);
-      setSelectedEmployeeId(remaining[0]?.id || '');
-    }
   };
 
   // In-line Rate and Bonus updates
@@ -262,12 +274,15 @@ export default function App() {
 
   // Reset to initial demo data
   const handleResetData = () => {
-    if (confirm('Сбросить все изменения графиков, ставок и смен к начальным образцам?')) {
-      localStorage.removeItem(STORAGE_KEYS.EMPLOYEES);
-      localStorage.removeItem(STORAGE_KEYS.OVERRIDES);
-      setEmployees(INITIAL_EMPLOYEES);
-      setOverrides(INITIAL_OVERRIDES);
-    }
+    setConfirmState({ type: 'resetData' });
+  };
+
+  const executeResetData = () => {
+    localStorage.removeItem(STORAGE_KEYS.EMPLOYEES);
+    localStorage.removeItem(STORAGE_KEYS.OVERRIDES);
+    setEmployees(INITIAL_EMPLOYEES);
+    setOverrides(INITIAL_OVERRIDES);
+    setSelectedEmployeeId(INITIAL_EMPLOYEES[0]?.id || '');
   };
 
   // Export full CSV statement
@@ -491,6 +506,37 @@ export default function App() {
           month={month}
           onUpdateJubileeBonus={handleUpdateJubileeBonus}
           onClose={() => setIsJubileeModalOpen(false)}
+        />
+      )}
+
+      {confirmState && (
+        <ConfirmModal
+          title={
+            confirmState.type === 'deleteEmployee'
+              ? 'Удаление сотрудника'
+              : 'Сброс данных к начальным'
+          }
+          message={
+            confirmState.type === 'deleteEmployee'
+              ? `Вы действительно хотите удалить сотрудника «${confirmState.employeeName}»?`
+              : 'Сбросить все изменения графиков, ставок, телефонов и смен к начальным образцам?'
+          }
+          detail={
+            confirmState.type === 'deleteEmployee'
+              ? `Отдел: ${confirmState.employeeDepartment}. Все назначенные смены, отпуска, больничные и расчёты по этому сотруднику будут удалены.`
+              : 'Все добавленные сотрудники и ручные изменения будут заменены демонстрационным списком.'
+          }
+          confirmLabel={confirmState.type === 'deleteEmployee' ? 'Удалить сотрудника' : 'Сбросить данные'}
+          variant={confirmState.type === 'deleteEmployee' ? 'danger' : 'warning'}
+          onConfirm={() => {
+            if (confirmState.type === 'deleteEmployee') {
+              executeDeleteEmployee(confirmState.employeeId);
+            } else {
+              executeResetData();
+            }
+            setConfirmState(null);
+          }}
+          onCancel={() => setConfirmState(null)}
         />
       )}
     </div>
